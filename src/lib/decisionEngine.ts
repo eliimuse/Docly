@@ -70,28 +70,81 @@ export function decideStatus(
   const missing: string[] = [];
   const missingLabels: string[] = [];
 
-  const rawVendor = String(extracted.vendor_name || '').trim();
-  if (
-    !rawVendor ||
-    rawVendor.toLowerCase().includes('not provided') ||
-    rawVendor.toLowerCase().includes('unknown') ||
-    rawVendor.toLowerCase().includes('missing') ||
-    rawVendor.startsWith('[') ||
-    rawVendor.endsWith(']')
-  ) {
+  const rawVendor = String(
+    extracted.vendor_name ||
+    extracted.candidate_name ||
+    extracted.applicant_name ||
+    extracted.name ||
+    ''
+  ).trim();
+
+  const isMissingVendor = (val: string) => {
+    const s = val.toLowerCase();
+    return (
+      !s ||
+      s === 'not provided' ||
+      s === 'unknown' ||
+      s === 'missing' ||
+      s === 'n/a' ||
+      s === 'na' ||
+      s === 'none' ||
+      s === '-' ||
+      s === 'unidentified' ||
+      s === 'unidentified vendor' ||
+      s === 'not available' ||
+      s === 'null' ||
+      s.startsWith('[') ||
+      s.endsWith(']') ||
+      s.includes('not provided') ||
+      s.includes('missing name') ||
+      s.includes('unidentified')
+    );
+  };
+
+  if (isMissingVendor(rawVendor)) {
     missing.push('vendor_name');
-    missingLabels.push(isFinancial ? 'Vendor Name' : 'Entity / Applicant Name');
+    missingLabels.push(
+      isResume
+        ? 'Candidate Name'
+        : isStudentApp
+        ? 'Applicant Name'
+        : isFinancial
+        ? 'Vendor Name'
+        : 'Entity Name'
+    );
   }
 
-  const rawDate = String(extracted.invoice_date || '').trim();
-  if (
-    isFinancial &&
-    (!rawDate ||
-      rawDate.includes('_') ||
-      rawDate.toLowerCase().includes('n/a') ||
-      rawDate.toLowerCase().includes('missing') ||
-      rawDate.toLowerCase().includes('not provided'))
-  ) {
+  const rawDate = String(
+    extracted.invoice_date ||
+    extracted.date ||
+    extracted.document_date ||
+    ''
+  ).trim();
+
+  const isMissingDate = (val: string) => {
+    const s = val.toLowerCase();
+    return (
+      !s ||
+      s.includes('_') ||
+      s === 'n/a' ||
+      s === 'na' ||
+      s === 'none' ||
+      s === '-' ||
+      s === 'not provided' ||
+      s === 'missing' ||
+      s === 'unknown' ||
+      s === 'not available' ||
+      s === 'null' ||
+      s === '0000-00-00' ||
+      s.includes('missing') ||
+      s.includes('not provided') ||
+      s.includes('invalid')
+    );
+  };
+
+  // Date is mandatory for all financial, student application, contract, and transactional documents
+  const requiresDate = !isResume;
+  if (requiresDate && isMissingDate(rawDate)) {
     missing.push('invoice_date');
     missingLabels.push('Document Date');
   }
@@ -111,6 +164,21 @@ export function decideStatus(
 
   let status: DecisionStatus = 'approved';
   let reason = '';
+
+  // Universal Rule: If mandatory required fields (Name, Date, Total Amount) are missing -> REJECT
+  if (missing.length > 0) {
+    status = 'rejected';
+    reason = `Rejected due to missing required field(s) on document: ${missingLabels.join(', ')}.`;
+    return {
+      status,
+      reason,
+      missing,
+      missingLabels,
+      totalsReconcile,
+      mathDiff,
+      calculatedTotal,
+    };
+  }
 
   // Specific domain checks
   if (isResume) {
@@ -148,11 +216,9 @@ export function decideStatus(
     const hasRejectedIssue = extracted.issues?.some((i: string) => i.toLowerCase().includes('rejected'));
     const hasFlaggedIssue = extracted.issues?.some((i: string) => i.toLowerCase().includes('flagged'));
 
-    if (missing.length > 0 || hasRejectedIssue) {
+    if (hasRejectedIssue) {
       status = 'rejected';
-      reason = missing.length > 0
-        ? `Rejected due to missing required field(s) on document: ${missingLabels.join(', ')}.`
-        : 'Rejected due to validation policy failure.';
+      reason = 'Rejected due to validation policy failure.';
     } else if (isFinancial && extracted.total_amount >= customThreshold) {
       status = 'flagged';
       reason = `Flagged for manager review: Total amount (${currencySymbol} ${extracted.total_amount.toLocaleString()}) reaches or exceeds approval policy threshold (${customThreshold}).`;

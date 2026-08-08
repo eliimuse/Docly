@@ -312,30 +312,72 @@ Return strictly JSON matching the required schema.`;
     const missing: string[] = [];
     const missingLabels: string[] = [];
 
-    const rawVendor = String(extracted.vendor_name || "").trim();
-    if (
-      !rawVendor ||
-      rawVendor.toLowerCase().includes("not provided") ||
-      rawVendor.toLowerCase().includes("unknown") ||
-      rawVendor.toLowerCase().includes("missing") ||
-      rawVendor.startsWith("[") ||
-      rawVendor.endsWith("]")
-    ) {
+    const rawVendor = String(
+      extracted.vendor_name ||
+      extracted.candidate_name ||
+      extracted.applicant_name ||
+      extracted.name ||
+      ""
+    ).trim();
+
+    const isMissingVendor = (val: string) => {
+      const s = val.toLowerCase();
+      return (
+        !s ||
+        s === "not provided" ||
+        s === "unknown" ||
+        s === "missing" ||
+        s === "n/a" ||
+        s === "na" ||
+        s === "none" ||
+        s === "-" ||
+        s === "unidentified" ||
+        s === "unidentified vendor" ||
+        s === "not available" ||
+        s === "null" ||
+        s.startsWith("[") ||
+        s.endsWith("]") ||
+        s.includes("not provided") ||
+        s.includes("missing name") ||
+        s.includes("unidentified")
+      );
+    };
+
+    if (isMissingVendor(rawVendor)) {
       missing.push("vendor_name");
       missingLabels.push(isFinancial ? "Vendor Name" : "Entity / Applicant Name");
       extracted.vendor_name = rawVendor || "Not Provided";
     }
 
-    const rawDate = String(extracted.invoice_date || "").trim();
-    if (
-      isFinancial && (
-        !rawDate ||
-        rawDate.includes("_") ||
-        rawDate.toLowerCase().includes("n/a") ||
-        rawDate.toLowerCase().includes("missing") ||
-        rawDate.toLowerCase().includes("not provided")
-      )
-    ) {
+    const rawDate = String(
+      extracted.invoice_date ||
+      extracted.date ||
+      extracted.document_date ||
+      ""
+    ).trim();
+
+    const isMissingDate = (val: string) => {
+      const s = val.toLowerCase();
+      return (
+        !s ||
+        s.includes("_") ||
+        s === "n/a" ||
+        s === "na" ||
+        s === "none" ||
+        s === "-" ||
+        s === "not provided" ||
+        s === "missing" ||
+        s === "unknown" ||
+        s === "not available" ||
+        s === "null" ||
+        s === "0000-00-00" ||
+        s.includes("missing") ||
+        s.includes("not provided") ||
+        s.includes("invalid")
+      );
+    };
+
+    if (isMissingDate(rawDate)) {
       missing.push("invoice_date");
       missingLabels.push("Document Date");
       extracted.invoice_date = rawDate || "Not Provided";
