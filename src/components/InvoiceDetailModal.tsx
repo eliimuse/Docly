@@ -167,6 +167,49 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1">
           {activeTab === 'details' && (
             <>
+              {/* Document Type Header Badge */}
+              {d.document_type && (
+                <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-500 text-white font-semibold text-[10px] uppercase tracking-wider">
+                      CLASSIFIED TYPE
+                    </span>
+                    <span className="font-bold text-indigo-200 text-sm">
+                      {d.document_type}
+                    </span>
+                  </div>
+                  {d.document_title && (
+                    <span className="text-slate-400 text-xs truncate max-w-xs">
+                      {d.document_title}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Key Attributes Grid (Extracted Metadata) */}
+              {d.key_attributes && d.key_attributes.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Extracted Key Attributes</span>
+                  </h4>
+                  <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl border ${
+                    isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    {d.key_attributes.map((attr, idx) => (
+                      <div key={idx} className={`p-2 rounded border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                          {attr.label}
+                        </span>
+                        <span className={`text-xs font-semibold truncate block mt-0.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                          {attr.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Field Grid */}
               <div
                 className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl border ${
@@ -179,7 +222,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                       isDark ? 'text-slate-400' : 'text-slate-500'
                     }`}
                   >
-                    Invoice Date
+                    Document Date
                   </span>
                   <span
                     className={`text-xs font-semibold ${
@@ -234,6 +277,53 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Dynamic Workflow Steps */}
+              {d.dynamic_workflow && d.dynamic_workflow.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>AI Dynamic Action Steps</span>
+                  </h4>
+                  <div className={`space-y-1.5 p-3 rounded-xl border ${
+                    isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    {d.dynamic_workflow.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between p-2 rounded text-xs border ${
+                          isDark ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 min-w-0 pr-2">
+                          <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className={`font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                            {step.step_name}
+                          </span>
+                          {step.details && (
+                            <span className="text-slate-400 text-[11px] truncate hidden sm:inline">
+                              • {step.details}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                            step.status === 'completed'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : step.status === 'flagged'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                          }`}
+                        >
+                          {step.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Validation & Decision */}
               <div
@@ -300,7 +390,9 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                       }`}
                     >
                       {d.line_items?.map((item, idx) => {
-                        const lineAmount = item.amount && item.amount > 0 ? item.amount : ((item.quantity || 1) * (item.unit_price || 0));
+                        const qty = item.quantity || 1;
+                        const lineAmount = item.amount && item.amount > 0 ? item.amount : (qty * (item.unit_price || 0));
+                        const unitPrice = item.unit_price && item.unit_price > 0 ? item.unit_price : (lineAmount > 0 ? (lineAmount / qty) : 0);
                         return (
                           <tr key={idx}>
                             <td
@@ -315,21 +407,21 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                                 isDark ? 'text-slate-400' : 'text-slate-500'
                               }`}
                             >
-                              {item.quantity || 1}
+                              {qty}
                             </td>
                             <td
                               className={`p-2.5 text-right font-mono ${
                                 isDark ? 'text-slate-400' : 'text-slate-500'
                               }`}
                             >
-                              {(item.unit_price || 0).toLocaleString()}
+                              {unitPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </td>
                             <td
                               className={`p-2.5 text-right font-mono font-semibold ${
                                 isDark ? 'text-slate-100' : 'text-slate-900'
                               }`}
                             >
-                              {lineAmount.toLocaleString()}
+                              {lineAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
                         );

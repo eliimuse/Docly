@@ -10,6 +10,7 @@ interface HeaderProps {
   setRuleConfig: React.Dispatch<React.SetStateAction<WorkflowRuleConfig>>;
   theme: 'dark' | 'light';
   setTheme: (theme: 'dark' | 'light') => void;
+  onOpenIntro?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   setRuleConfig,
   theme,
   setTheme,
+  onOpenIntro,
 }) => {
   const [showConfigModal, setShowConfigModal] = useState(false);
 
@@ -37,8 +39,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Brand Row */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+            <div
+              onClick={onOpenIntro}
+              className={`flex items-center space-x-2.5 ${onOpenIntro ? 'cursor-pointer group' : ''}`}
+              title={onOpenIntro ? 'Return to Intro Home' : undefined}
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0 group-hover:scale-105 transition-transform">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -52,22 +58,13 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     Docly
                   </h1>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
-                      isDark
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    }`}
-                  >
-                    <Sparkles className="w-3 h-3 mr-1 text-emerald-500" /> Gemini 2-Pass OCR
-                  </span>
                 </div>
                 <p
                   className={`text-[11px] hidden sm:block ${
                     isDark ? 'text-slate-400' : 'text-slate-500'
                   }`}
                 >
-                  Multimodal OCR • Validation Rules • Automated Ledger Entry
+                  Universal Document AI • Dynamic Workflows • Central Ledger
                 </p>
               </div>
             </div>

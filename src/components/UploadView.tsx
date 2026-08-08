@@ -25,7 +25,7 @@ import {
   DecisionStatus,
 } from '../types';
 import { SAMPLE_SCENARIOS } from '../data/sampleInvoices';
-import { WorkflowDiagram } from './WorkflowDiagram';
+import { WorkflowDiagram, PipelineStage } from './WorkflowDiagram';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 interface UploadViewProps {
@@ -48,9 +48,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
   } | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentPipelineStage, setCurrentPipelineStage] = useState<
-    'idle' | 'ocr' | 'validate' | 'decision' | 'complete'
-  >('idle');
+  const [currentPipelineStage, setCurrentPipelineStage] = useState<PipelineStage>('idle');
 
   const [extractedResult, setExtractedResult] = useState<InvoiceExtractedData | null>(null);
   const [processingTimeMs, setProcessingTimeMs] = useState<number>(0);
@@ -133,9 +131,12 @@ export const UploadView: React.FC<UploadViewProps> = ({
     setSavedStatus(false);
 
     try {
-      // Simulate stage transitions for visual feedback
-      const timer1 = setTimeout(() => setCurrentPipelineStage('validate'), 500);
-      const timer2 = setTimeout(() => setCurrentPipelineStage('decision'), 900);
+      // Simulate pipeline stage transitions for visual architectural feedback
+      const timer1 = setTimeout(() => setCurrentPipelineStage('classify'), 250);
+      const timer2 = setTimeout(() => setCurrentPipelineStage('extract'), 500);
+      const timer3 = setTimeout(() => setCurrentPipelineStage('validate'), 750);
+      const timer4 = setTimeout(() => setCurrentPipelineStage('decision'), 1000);
+      const timer5 = setTimeout(() => setCurrentPipelineStage('workflow'), 1250);
 
       const response = await fetch('/api/process-invoice', {
         method: 'POST',
@@ -150,6 +151,9 @@ export const UploadView: React.FC<UploadViewProps> = ({
 
       clearTimeout(timer1);
       clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+      clearTimeout(timer5);
 
       const resData = await response.json();
 
@@ -225,7 +229,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
               </span>
             </h2>
             <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Drop an invoice or select a pre-configured scenario below to execute the 1-pass agent.
+              Drop any document (Resume, PO, Contract, Invoice) or select a scenario below to run the AI engine.
             </p>
 
             {/* Dropzone */}
@@ -397,10 +401,10 @@ export const UploadView: React.FC<UploadViewProps> = ({
                 <Sparkles className="w-6 h-6 text-indigo-500" />
               </div>
               <h3 className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                Awaiting Invoice Execution
+                Awaiting Document Execution
               </h3>
               <p className={`text-xs max-w-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Upload an invoice image on the left or select a quick test scenario below to trigger Gemini's 1-pass extraction and rule engine.
+                Upload a document image or PDF on the left or select a quick test scenario below to trigger Gemini's workflow engine.
               </p>
             </div>
           )}
@@ -531,52 +535,138 @@ export const UploadView: React.FC<UploadViewProps> = ({
               <div className="p-5">
                 {activeResultTab === 'extracted' && (
                   <div className="space-y-5">
-                    {/* Key Metrics Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800">
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
-                          Subtotal
-                        </span>
-                        <span className="text-xs font-semibold text-slate-200">
-                          {extractedResult.currency || ruleConfig.currencySymbol}{' '}
-                          {(extractedResult.subtotal || 0).toLocaleString()}
-                        </span>
+                    {/* Document Classification & Type Header */}
+                    {extractedResult.document_type && (
+                      <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-lg flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-500 text-white font-semibold text-[10px] uppercase tracking-wider">
+                            CLASSIFIED TYPE
+                          </span>
+                          <span className="font-bold text-indigo-200 text-sm">
+                            {extractedResult.document_type}
+                          </span>
+                        </div>
+                        {extractedResult.document_title && (
+                          <span className="text-slate-400 text-xs truncate max-w-xs">
+                            {extractedResult.document_title}
+                          </span>
+                        )}
                       </div>
+                    )}
+
+                    {/* Key Attributes Grid (Extracted Metadata) */}
+                    {extractedResult.key_attributes && extractedResult.key_attributes.length > 0 && (
                       <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
-                          Tax / GST
-                        </span>
-                        <span className="text-xs font-semibold text-slate-200">
-                          {extractedResult.currency || ruleConfig.currencySymbol}{' '}
-                          {(extractedResult.tax_gst || 0).toLocaleString()}
-                        </span>
+                        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Extracted Document Attributes</span>
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                          {extractedResult.key_attributes.map((attr, idx) => (
+                            <div key={idx} className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                                {attr.label}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-100 truncate block mt-0.5">
+                                {attr.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Key Financial Metrics Grid (Shown if financial totals exist) */}
+                    {(extractedResult.total_amount > 0 || extractedResult.subtotal > 0 || extractedResult.tax_gst > 0) && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                            Subtotal
+                          </span>
+                          <span className="text-xs font-semibold text-slate-200">
+                            {extractedResult.currency || ruleConfig.currencySymbol}{' '}
+                            {(extractedResult.subtotal || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                            Tax / GST
+                          </span>
+                          <span className="text-xs font-semibold text-slate-200">
+                            {extractedResult.currency || ruleConfig.currencySymbol}{' '}
+                            {(extractedResult.tax_gst || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                            Total Amount
+                          </span>
+                          <span className="text-sm font-bold text-emerald-400">
+                            {extractedResult.currency || ruleConfig.currencySymbol}{' '}
+                            {(extractedResult.total_amount || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                            Confidence
+                          </span>
+                          <span
+                            className={`text-xs font-bold uppercase ${
+                              extractedResult.extraction_confidence === 'high'
+                                ? 'text-emerald-400'
+                                : extractedResult.extraction_confidence === 'medium'
+                                ? 'text-amber-400'
+                                : 'text-red-400'
+                            }`}
+                          >
+                            {extractedResult.extraction_confidence || 'Medium'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic AI Generated Workflow Steps */}
+                    {extractedResult.dynamic_workflow && extractedResult.dynamic_workflow.length > 0 && (
                       <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
-                          Total Amount
-                        </span>
-                        <span className="text-sm font-bold text-emerald-400">
-                          {extractedResult.currency || ruleConfig.currencySymbol}{' '}
-                          {(extractedResult.total_amount || 0).toLocaleString()}
-                        </span>
+                        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>AI Dynamic Action Checklist</span>
+                        </h4>
+                        <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                          {extractedResult.dynamic_workflow.map((step, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/80 text-xs"
+                            >
+                              <div className="flex items-center space-x-2 min-w-0 pr-2">
+                                <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="font-semibold text-slate-200 truncate">
+                                  {step.step_name}
+                                </span>
+                                {step.details && (
+                                  <span className="text-slate-400 text-[11px] truncate hidden sm:inline">
+                                    • {step.details}
+                                  </span>
+                                )}
+                              </div>
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                                  step.status === 'completed'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    : step.status === 'flagged'
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                }`}
+                              >
+                                {step.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
-                          Confidence
-                        </span>
-                        <span
-                          className={`text-xs font-bold uppercase ${
-                            extractedResult.extraction_confidence === 'high'
-                              ? 'text-emerald-400'
-                              : extractedResult.extraction_confidence === 'medium'
-                              ? 'text-amber-400'
-                              : 'text-red-400'
-                          }`}
-                        >
-                          {extractedResult.extraction_confidence || 'Medium'}
-                        </span>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Decision Justification Box */}
                     <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs">
@@ -586,37 +676,43 @@ export const UploadView: React.FC<UploadViewProps> = ({
                       <p className="text-slate-400">{extractedResult.decision.reason}</p>
                     </div>
 
-                    {/* Line Items Table */}
+                    {/* Line Items / Extracted Content Table */}
                     <div>
                       <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                        Itemized Line Items ({extractedResult.line_items?.length || 0})
+                        Parsed Document Items / Sections ({extractedResult.line_items?.length || 0})
                       </h4>
                       <div className="overflow-x-auto border border-slate-800 rounded-lg">
                         <table className="w-full text-left text-xs text-slate-300">
                           <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
                             <tr>
-                              <th className="p-2.5">Description</th>
-                              <th className="p-2.5 text-right">Qty</th>
-                              <th className="p-2.5 text-right">Unit Price</th>
-                              <th className="p-2.5 text-right">Amount</th>
+                              <th className="p-2.5">Description / Entry</th>
+                              <th className="p-2.5 text-right">Qty / Unit</th>
+                              <th className="p-2.5 text-right">Unit Rate</th>
+                              <th className="p-2.5 text-right">Amount / Score</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/60">
                             {extractedResult.line_items?.map((item, idx) => {
-                              const lineAmount = item.amount && item.amount > 0 ? item.amount : ((item.quantity || 1) * (item.unit_price || 0));
+                              const qty = item.quantity || 1;
+                              const lineAmount = item.amount && item.amount > 0 ? item.amount : (qty * (item.unit_price || 0));
+                              const displayUnitPrice = item.unit_price && item.unit_price > 0 ? item.unit_price : (lineAmount > 0 ? (lineAmount / qty) : 0);
                               return (
                                 <tr key={idx} className="hover:bg-slate-800/30">
                                   <td className="p-2.5 font-medium text-slate-200">
                                     {item.description || 'Item'}
                                   </td>
                                   <td className="p-2.5 text-right font-mono text-slate-400">
-                                    {item.quantity || 1}
+                                    {qty}
                                   </td>
                                   <td className="p-2.5 text-right font-mono text-slate-400">
-                                    {(item.unit_price || 0).toLocaleString()}
+                                    {displayUnitPrice > 0
+                                      ? displayUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+                                      : '—'}
                                   </td>
                                   <td className="p-2.5 text-right font-mono font-semibold text-slate-100">
-                                    {lineAmount.toLocaleString()}
+                                    {lineAmount > 0
+                                      ? lineAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+                                      : 'Verified'}
                                   </td>
                                 </tr>
                               );
@@ -925,12 +1021,16 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
     ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
     ctx.fillRect(40, y - 18, 570, 28);
 
+    const qty = item.quantity || 1;
+    const amt = item.amount && item.amount > 0 ? item.amount : (qty * (item.unit_price || 0));
+    const unitPrice = item.unit_price && item.unit_price > 0 ? item.unit_price : (amt > 0 ? (amt / qty) : 0);
+
     ctx.fillStyle = '#1e293b';
     ctx.font = '13px Arial, sans-serif';
     ctx.fillText(item.description, 55, y);
-    ctx.fillText(String(item.quantity), 375, y);
-    ctx.fillText(`${curr} ${(item.unit_price || 0).toLocaleString()}`, 440, y);
-    ctx.fillText(`${curr} ${(item.amount || 0).toLocaleString()}`, 530, y);
+    ctx.fillText(String(qty), 375, y);
+    ctx.fillText(`${curr} ${unitPrice.toLocaleString()}`, 440, y);
+    ctx.fillText(`${curr} ${amt.toLocaleString()}`, 530, y);
     y += 32;
   });
 

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/Header';
 import { UploadView } from './components/UploadView';
 import { LedgerView } from './components/LedgerView';
 import { InvoiceDetailModal } from './components/InvoiceDetailModal';
+import { IntroScreen } from './components/IntroScreen';
 import { InvoiceRecord, WorkflowRuleConfig, DecisionStatus } from './types';
 import { DEFAULT_WORKFLOW_CONFIG, INITIAL_LEDGER_RECORDS } from './data/sampleInvoices';
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'upload' | 'ledger'>('upload');
   const [ruleConfig, setRuleConfig] = useState<WorkflowRuleConfig>(DEFAULT_WORKFLOW_CONFIG);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -109,45 +112,73 @@ export default function App() {
           : 'bg-slate-100 text-slate-900 light'
       }`}
     >
-      {/* Navbar Header */}
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        recordCount={records.length}
-        ruleConfig={ruleConfig}
-        setRuleConfig={setRuleConfig}
-        theme={theme}
-        setTheme={setTheme}
-      />
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
-        {activeTab === 'upload' ? (
-          <UploadView
-            onSaveToLedger={handleSaveToLedger}
-            ruleConfig={ruleConfig}
-            theme={theme}
-          />
+      <AnimatePresence mode="wait">
+        {showIntro ? (
+          <motion.div
+            key="intro-screen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.98 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            className="w-full min-h-screen"
+          >
+            <IntroScreen
+              onGetStarted={() => setShowIntro(false)}
+              theme={theme}
+            />
+          </motion.div>
         ) : (
-          <LedgerView
-            records={records}
-            onSelectRecord={(rec) => setSelectedRecordModal(rec)}
-            onOverrideStatus={handleOverrideStatus}
-            onDeleteRecord={handleDeleteRecord}
-            onResetLedger={handleResetLedger}
-            ruleConfig={ruleConfig}
-            theme={theme}
-          />
-        )}
-      </main>
+          <motion.div
+            key="main-docly-app"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="min-h-screen flex flex-col"
+          >
+            {/* Navbar Header */}
+            <Header
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              recordCount={records.length}
+              ruleConfig={ruleConfig}
+              setRuleConfig={setRuleConfig}
+              theme={theme}
+              setTheme={setTheme}
+              onOpenIntro={() => setShowIntro(true)}
+            />
 
-      {/* Drill-down Modal */}
-      <InvoiceDetailModal
-        record={selectedRecordModal}
-        onClose={() => setSelectedRecordModal(null)}
-        onOverrideStatus={handleOverrideStatus}
-        theme={theme}
-      />
+            {/* Main Container */}
+            <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden w-full flex-1">
+              {activeTab === 'upload' ? (
+                <UploadView
+                  onSaveToLedger={handleSaveToLedger}
+                  ruleConfig={ruleConfig}
+                  theme={theme}
+                />
+              ) : (
+                <LedgerView
+                  records={records}
+                  onSelectRecord={(rec) => setSelectedRecordModal(rec)}
+                  onOverrideStatus={handleOverrideStatus}
+                  onDeleteRecord={handleDeleteRecord}
+                  onResetLedger={handleResetLedger}
+                  ruleConfig={ruleConfig}
+                  theme={theme}
+                />
+              )}
+            </main>
+
+            {/* Drill-down Modal */}
+            <InvoiceDetailModal
+              record={selectedRecordModal}
+              onClose={() => setSelectedRecordModal(null)}
+              onOverrideStatus={handleOverrideStatus}
+              theme={theme}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
