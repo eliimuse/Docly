@@ -112,6 +112,13 @@ export default function App() {
           : 'bg-slate-100 text-slate-900 light'
       }`}
     >
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none font-bold text-xs"
+      >
+        Skip to main content
+      </a>
+
       <AnimatePresence mode="wait">
         {showIntro ? (
           <motion.div
@@ -149,7 +156,7 @@ export default function App() {
             />
 
             {/* Main Container */}
-            <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden w-full flex-1">
+            <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden w-full flex-1 focus-visible:outline-none">
               {activeTab === 'upload' ? (
                 <UploadView
                   onSaveToLedger={handleSaveToLedger}

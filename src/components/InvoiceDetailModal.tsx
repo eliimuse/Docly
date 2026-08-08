@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import {
   X,
   FileText,
@@ -46,18 +47,10 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'json' | 'override'>('details');
 
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+
   const d = record.extractedData;
   const effectiveStatus = record.overrideStatus || d.decision.status;
-
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
 
   const handleApplyOverride = () => {
     onOverrideStatus(record.id, overrideStatus, overrideReason);
@@ -70,9 +63,31 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleTabKeyDown = (e: React.KeyboardEvent) => {
+    const tabsList: Array<'details' | 'override' | 'json'> = ['details', 'override', 'json'];
+    const currentIndex = tabsList.indexOf(activeTab);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % tabsList.length;
+      setActiveTab(tabsList[nextIndex]);
+      setTimeout(() => {
+        document.getElementById(`tab-${tabsList[nextIndex]}`)?.focus();
+      }, 0);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = (currentIndex - 1 + tabsList.length) % tabsList.length;
+      setActiveTab(tabsList[prevIndex]);
+      setTimeout(() => {
+        document.getElementById(`tab-${tabsList[prevIndex]}`)?.focus();
+      }, 0);
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
+      ref={modalRef}
+      tabIndex={-1}
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 focus-visible:outline-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="invoice-modal-title"
@@ -135,13 +150,20 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
         {/* Tab Selection */}
         <div
+          role="tablist"
+          aria-label="Invoice Detail Sections"
+          onKeyDown={handleTabKeyDown}
           className={`flex border-b px-4 sm:px-5 ${
             isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-100'
           }`}
         >
           <button
+            role="tab"
+            id="tab-details"
+            aria-selected={activeTab === 'details'}
+            aria-controls="panel-details"
             onClick={() => setActiveTab('details')}
-            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors ${
+            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               activeTab === 'details'
                 ? 'border-indigo-500 text-indigo-500 font-bold'
                 : isDark
@@ -152,8 +174,12 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             Invoice Breakdown
           </button>
           <button
+            role="tab"
+            id="tab-override"
+            aria-selected={activeTab === 'override'}
+            aria-controls="panel-override"
             onClick={() => setActiveTab('override')}
-            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 ${
+            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               activeTab === 'override'
                 ? 'border-indigo-500 text-indigo-500 font-bold'
                 : isDark
@@ -165,8 +191,12 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             <span>Manager Override</span>
           </button>
           <button
+            role="tab"
+            id="tab-json"
+            aria-selected={activeTab === 'json'}
+            aria-controls="panel-json"
             onClick={() => setActiveTab('json')}
-            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 ${
+            className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               activeTab === 'json'
                 ? 'border-indigo-500 text-indigo-500 font-bold'
                 : isDark
@@ -180,9 +210,15 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         </div>
 
         {/* Body Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1">
           {activeTab === 'details' && (
-            <>
+            <div
+              role="tabpanel"
+              id="panel-details"
+              aria-labelledby="tab-details"
+              tabIndex={0}
+              className="space-y-5 focus-visible:outline-none"
+            >
               {/* Document Type Header Badge */}
               {d.document_type && (
                 <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl flex items-center justify-between text-xs">
@@ -446,11 +482,17 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                   </table>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {activeTab === 'override' && (
-            <div className="space-y-4">
+            <div
+              role="tabpanel"
+              id="panel-override"
+              aria-labelledby="tab-override"
+              tabIndex={0}
+              className="space-y-4 focus-visible:outline-none"
+            >
               <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-300">
                 <span className="font-bold text-white block mb-1">
                   Compliance Status Override
@@ -509,7 +551,13 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
           )}
 
           {activeTab === 'json' && (
-            <div className="relative">
+            <div
+              role="tabpanel"
+              id="panel-json"
+              aria-labelledby="tab-json"
+              tabIndex={0}
+              className="relative focus-visible:outline-none"
+            >
               <button
                 onClick={handleCopyJson}
                 className="absolute top-2 right-2 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] rounded flex items-center space-x-1 z-10"

@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import helmet from "helmet";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { cleanNumber, decideStatus } from "./src/lib/decisionEngine";
@@ -7,13 +8,17 @@ import { cleanNumber, decideStatus } from "./src/lib/decisionEngine";
 const app = express();
 const PORT = 3000;
 
+// Security: Global helmet security middleware for HTTP headers
+app.use(helmet({ contentSecurityPolicy: false }));
+
 // Security: Reduced payload limits to 10mb to mitigate payload-based DoS
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Security: Explicit CORS configuration and security headers
+// Security: Scoped CORS configuration reading ALLOWED_ORIGIN env var
+const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
 app.use("/api", (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Session-Id");
   if (req.method === "OPTIONS") {
@@ -547,9 +552,19 @@ app.get("/api/invoices", (req, res) => {
 // API: Save or Update Invoice in Ledger
 app.post("/api/invoices", (req, res) => {
   const { record } = req.body;
-  if (!record || typeof record !== "object" || !record.id || typeof record.id !== "string") {
-    return res.status(400).json({ success: false, error: "Invalid record format provided" });
+  if (
+    !record ||
+    typeof record !== "object" ||
+    !record.id ||
+    typeof record.id !== "string" ||
+    (typeof record.timestamp !== "string" && typeof record.timestamp !== "number") ||
+    !record.extractedData ||
+    typeof record.extractedData !== "object"
+  ) {
+    return res.status(400).json({ success: false, error: "Invalid record format provided: missing required id, timestamp, or extractedData" });
   }
+
+  // Note: X-Session-Id is a lightweight, client-supplied demo-tier session ownership check (unverified token), not cryptographically signed authentication. This is an intentional trade-off for stateless demo environments.
   const sessionId = req.headers["x-session-id"] as string | undefined;
   if (sessionId) {
     record.sessionId = sessionId;
@@ -573,7 +588,7 @@ app.put("/api/invoices/:id/override", (req, res) => {
     return res.status(400).json({ success: false, error: "Invalid ID parameter" });
   }
 
-  if (!["approved", "flagged", "rejected"].includes(overrideStatus)) {
+  if (!overrideStatus || !["approved", "flagged", "rejected"].includes(overrideStatus)) {
     return res.status(400).json({ success: false, error: "Invalid overrideStatus value" });
   }
 
@@ -582,6 +597,7 @@ app.put("/api/invoices/:id/override", (req, res) => {
     return res.status(404).json({ success: false, error: "Invoice record not found" });
   }
 
+  // Note: X-Session-Id is a lightweight, client-supplied demo-tier session ownership check (unverified token), not cryptographically signed authentication. This is an intentional trade-off for stateless demo environments.
   const sessionId = req.headers["x-session-id"] as string | undefined;
   if (ledgerStore[idx].sessionId && sessionId && ledgerStore[idx].sessionId !== sessionId) {
     return res.status(403).json({ success: false, error: "Unauthorized session for overriding this record" });
@@ -601,6 +617,7 @@ app.delete("/api/invoices/:id", (req, res) => {
 
   const record = ledgerStore.find((r) => r.id === id);
   if (record) {
+    // Note: X-Session-Id is a lightweight, client-supplied demo-tier session ownership check (unverified token), not cryptographically signed authentication. This is an intentional trade-off for stateless demo environments.
     const sessionId = req.headers["x-session-id"] as string | undefined;
     if (record.sessionId && sessionId && record.sessionId !== sessionId) {
       return res.status(403).json({ success: false, error: "Unauthorized session for deleting this record" });

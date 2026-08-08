@@ -392,9 +392,9 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onGetStarted, theme })
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
               <Brain className="w-5 h-5" />
             </div>
-            <h3 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+            <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
               Universal Document Classifier
-            </h3>
+            </h2>
             <p className={`mt-1 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Automatically identifies Resumes, POs, Student Applications, and Invoices with zero manual configuration.
             </p>
@@ -412,9 +412,9 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onGetStarted, theme })
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
               <GitFork className="w-5 h-5" />
             </div>
-            <h3 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+            <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
               Dynamic Workflow Generation
-            </h3>
+            </h2>
             <p className={`mt-1 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               AI generates tailor-made workflow action steps dynamically for every document type (Extraction, Inventory, Match Score, Approvals).
             </p>
@@ -432,9 +432,9 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onGetStarted, theme })
             <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-3">
               <BarChart3 className="w-5 h-5" />
             </div>
-            <h3 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+            <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
               Decision Agent & Central Ledger
-            </h3>
+            </h2>
             <p className={`mt-1 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Instant automated decisioning (Approved, Shortlisted, Flagged, Rejected) with full audit logs and drill-down analytics.
             </p>

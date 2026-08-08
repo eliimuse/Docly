@@ -874,14 +874,14 @@ export const UploadView: React.FC<UploadViewProps> = ({
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3
+              <h2
                 className={`text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 ${
                   isDark ? 'text-slate-200' : 'text-slate-800'
                 }`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
                 <span>Quick Test Scenarios (1-Click)</span>
-              </h3>
+              </h2>
               
               {/* Single Filter Dropdown */}
               <div className="relative flex items-center">

@@ -207,6 +207,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
   return (
     <div className="space-y-6">
+      <h2 className="sr-only">
+        Accounts Payable Audit Ledger & Decision Log
+      </h2>
+
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div
