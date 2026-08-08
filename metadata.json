@@ -1,0 +1,6 @@
+{
+  "name": "Invoice Workflow Agent",
+  "description": "AI-powered document ingestion, multimodal field extraction, automated reconciliation validation, and workflow decision system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
