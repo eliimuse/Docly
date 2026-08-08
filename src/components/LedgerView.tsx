@@ -28,6 +28,35 @@ interface LedgerViewProps {
   theme?: 'dark' | 'light';
 }
 
+const getDocTypeBadge = (extractedData: any) => {
+  const docTypeStr = (extractedData?.document_type || '').toLowerCase();
+  const docTitleStr = (extractedData?.document_title || '').toLowerCase();
+  if (
+    docTypeStr.includes('resume') ||
+    docTypeStr.includes('candidate') ||
+    docTitleStr.includes('resume')
+  ) {
+    return {
+      label: 'Resume',
+      badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    };
+  }
+  if (
+    docTypeStr.includes('student') ||
+    docTypeStr.includes('application') ||
+    docTitleStr.includes('application')
+  ) {
+    return {
+      label: 'Application',
+      badgeClass: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30',
+    };
+  }
+  return {
+    label: 'Invoice',
+    badgeClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+  };
+};
+
 export const LedgerView: React.FC<LedgerViewProps> = ({
   records,
   onSelectRecord,
@@ -348,6 +377,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           {filteredRecords.map((record) => {
             const effectiveStatus =
               record.overrideStatus || record.extractedData.decision.status;
+            const docTypeInfo = getDocTypeBadge(record.extractedData);
             return (
               <div
                 key={record.id}
@@ -356,24 +386,35 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                   isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
                     <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {record.extractedData.vendor_name || 'Unidentified'}
                     </span>
-                    <div className="text-[11px] font-mono text-slate-500">
-                      #{record.extractedData.invoice_number || 'N/A'} • {record.extractedData.invoice_date || 'N/A'}
-                    </div>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-semibold border rounded-full uppercase tracking-wider ${docTypeInfo.badgeClass}`}
+                    >
+                      {docTypeInfo.label}
+                    </span>
                   </div>
                   <BadgeStatus status={effectiveStatus} size="sm" />
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
+                  <div className="text-[11px] font-mono text-slate-500">
+                    #{record.extractedData.invoice_number || 'N/A'} • {record.extractedData.invoice_date || 'N/A'}
+                  </div>
                   <div className="text-xs font-mono font-extrabold text-indigo-500">
                     {record.extractedData.currency || ruleConfig.currencySymbol}{' '}
                     {(record.extractedData.total_amount || 0).toLocaleString()}
                   </div>
-                  <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                </div>
+
+                <div className="flex items-center justify-between pt-1" onClick={(e) => e.stopPropagation()}>
+                  <p className={`text-[11px] line-clamp-1 max-w-[200px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {record.extractedData.summary}
+                  </p>
+                  <div className="flex items-center space-x-1">
                     <button
                       onClick={() => onSelectRecord(record)}
                       className={`p-1.5 rounded border text-xs ${
@@ -392,19 +433,13 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     </button>
                   </div>
                 </div>
-
-                {record.extractedData.summary && (
-                  <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {record.extractedData.summary}
-                  </p>
-                )}
               </div>
             );
           })}
 
           {filteredRecords.length === 0 && (
             <div className={`p-6 text-center text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              No invoice records found matching query.
+              No records found matching query.
             </div>
           )}
         </div>
@@ -420,12 +455,12 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               }`}
             >
               <tr>
-                <th className="p-3.5">Vendor Name</th>
+                <th className="p-3.5">Name</th>
+                <th className="p-3.5">Type</th>
                 <th className="p-3.5">Invoice #</th>
                 <th className="p-3.5">Date</th>
                 <th className="p-3.5 text-right">Amount</th>
                 <th className="p-3.5">Workflow Status</th>
-                <th className="p-3.5">Accounting Summary</th>
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
@@ -437,6 +472,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
               {filteredRecords.map((record) => {
                 const effectiveStatus =
                   record.overrideStatus || record.extractedData.decision.status;
+                const docTypeInfo = getDocTypeBadge(record.extractedData);
                 return (
                   <tr
                     key={record.id}
@@ -446,10 +482,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     onClick={() => onSelectRecord(record)}
                   >
                     <td className={`p-3.5 font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                      <div>{record.extractedData.vendor_name || 'Unidentified'}</div>
-                      <div className="text-[10px] font-normal text-slate-500 font-mono mt-0.5">
-                        {record.fileName}
-                      </div>
+                      {record.extractedData.vendor_name || 'Unidentified'}
+                    </td>
+
+                    <td className="p-3.5">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 text-[10px] font-semibold border rounded-full uppercase tracking-wider ${docTypeInfo.badgeClass}`}
+                      >
+                        {docTypeInfo.label}
+                      </span>
                     </td>
 
                     <td className="p-3.5 font-mono">
@@ -474,10 +515,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                           </span>
                         )}
                       </div>
-                    </td>
-
-                    <td className={`p-3.5 max-w-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {record.extractedData.summary}
                     </td>
 
                     <td
