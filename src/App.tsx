@@ -9,6 +9,19 @@ import { DEFAULT_WORKFLOW_CONFIG, INITIAL_LEDGER_RECORDS } from './data/sampleIn
 export default function App() {
   const [activeTab, setActiveTab] = useState<'upload' | 'ledger'>('upload');
   const [ruleConfig, setRuleConfig] = useState<WorkflowRuleConfig>(DEFAULT_WORKFLOW_CONFIG);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('docly_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (e) {}
+    return 'dark';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('docly_theme', theme);
+    } catch (e) {}
+  }, [theme]);
 
   // Invoices Ledger State (persisted in localStorage + synced with backend)
   const [records, setRecords] = useState<InvoiceRecord[]>(() => {
@@ -89,7 +102,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div
+      className={`min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200 overflow-x-hidden ${
+        theme === 'dark'
+          ? 'bg-slate-950 text-slate-100 dark'
+          : 'bg-slate-100 text-slate-900 light'
+      }`}
+    >
       {/* Navbar Header */}
       <Header
         activeTab={activeTab}
@@ -97,12 +116,18 @@ export default function App() {
         recordCount={records.length}
         ruleConfig={ruleConfig}
         setRuleConfig={setRuleConfig}
+        theme={theme}
+        setTheme={setTheme}
       />
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
         {activeTab === 'upload' ? (
-          <UploadView onSaveToLedger={handleSaveToLedger} ruleConfig={ruleConfig} />
+          <UploadView
+            onSaveToLedger={handleSaveToLedger}
+            ruleConfig={ruleConfig}
+            theme={theme}
+          />
         ) : (
           <LedgerView
             records={records}
@@ -111,6 +136,7 @@ export default function App() {
             onDeleteRecord={handleDeleteRecord}
             onResetLedger={handleResetLedger}
             ruleConfig={ruleConfig}
+            theme={theme}
           />
         )}
       </main>
@@ -120,6 +146,7 @@ export default function App() {
         record={selectedRecordModal}
         onClose={() => setSelectedRecordModal(null)}
         onOverrideStatus={handleOverrideStatus}
+        theme={theme}
       />
     </div>
   );

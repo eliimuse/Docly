@@ -31,9 +31,15 @@ import { DocumentPreviewModal } from './DocumentPreviewModal';
 interface UploadViewProps {
   onSaveToLedger: (record: InvoiceRecord) => void;
   ruleConfig: WorkflowRuleConfig;
+  theme?: 'dark' | 'light';
 }
 
-export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConfig }) => {
+export const UploadView: React.FC<UploadViewProps> = ({
+  onSaveToLedger,
+  ruleConfig,
+  theme = 'dark',
+}) => {
+  const isDark = theme === 'dark';
   const [selectedFile, setSelectedFile] = useState<{
     name: string;
     type: string;
@@ -201,18 +207,24 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
   return (
     <div className="space-y-6">
       {/* Workflow Stage Architecture Banner */}
-      <WorkflowDiagram currentStage={currentPipelineStage} />
+      <WorkflowDiagram currentStage={currentPipelineStage} theme={theme} />
 
       {/* Main Action Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Upload & Sample Scenarios */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <h2 className="text-sm font-bold text-white mb-1 flex items-center justify-between">
+          <div
+            className={`border rounded-xl p-4 sm:p-5 shadow-sm transition-colors ${
+              isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+            }`}
+          >
+            <h2 className="text-sm font-bold mb-1 flex items-center justify-between">
               <span>1. Upload Document</span>
-              <span className="text-[11px] font-normal text-slate-400">PDF, PNG, JPG, WEBP</span>
+              <span className={`text-[11px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                PDF, PNG, JPG, WEBP
+              </span>
             </h2>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Drop an invoice or select a pre-configured scenario below to execute the 1-pass agent.
             </p>
 
@@ -225,10 +237,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
                   fileInputRef.current?.click();
                 }
               }}
-              className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${
+              className={`border-2 border-dashed rounded-xl p-4 sm:p-5 text-center transition-all ${
                 selectedFile
-                  ? 'border-indigo-500/60 bg-indigo-950/20'
-                  : 'border-slate-700 hover:border-indigo-500 hover:bg-slate-800/40 cursor-pointer'
+                  ? isDark
+                    ? 'border-indigo-500/60 bg-indigo-950/20'
+                    : 'border-indigo-400 bg-indigo-50/60'
+                  : isDark
+                  ? 'border-slate-700 hover:border-indigo-500 hover:bg-slate-800/40 cursor-pointer'
+                  : 'border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/40 cursor-pointer'
               }`}
             >
               <input
@@ -351,49 +367,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
               </div>
             )}
           </div>
-
-          {/* Quick Scenario Picker (Hackathon Judge Friendly) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Quick Test Scenarios (1-Click)</span>
-              </h3>
-              <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">
-                Judges
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              {SAMPLE_SCENARIOS.map((scenario) => {
-                const isSelected = selectedFile?.name.includes(
-                  scenario.sampleData.invoice_number || 'sample'
-                );
-                return (
-                  <button
-                    key={scenario.id}
-                    onClick={() => handleSelectSampleScenario(scenario)}
-                    className={`w-full text-left p-2.5 rounded-lg border transition-all flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-indigo-950/60 border-indigo-500 text-white'
-                        : 'bg-slate-950/50 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-semibold flex items-center space-x-2">
-                        <span>{scenario.title}</span>
-                        <BadgeStatus status={scenario.badge} size="sm" />
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {scenario.subtitle}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Right Column: AI Extraction & Workflow Results */}
@@ -409,39 +382,61 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
           )}
 
           {!extractedResult && !isProcessing && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center text-slate-400 flex flex-col items-center justify-center min-h-[380px]">
-              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-400 mb-3">
-                <Sparkles className="w-6 h-6 text-indigo-400" />
+            <div
+              className={`border rounded-xl p-8 sm:p-10 text-center flex flex-col items-center justify-center min-h-[300px] transition-colors ${
+                isDark
+                  ? 'bg-slate-900 border-slate-800 text-slate-400'
+                  : 'bg-white border-slate-200 text-slate-600 shadow-sm'
+              }`}
+            >
+              <div
+                className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-3 ${
+                  isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-indigo-50 border-indigo-100'
+                }`}
+              >
+                <Sparkles className="w-6 h-6 text-indigo-500" />
               </div>
-              <h3 className="text-sm font-bold text-slate-200">
+              <h3 className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                 Awaiting Invoice Execution
               </h3>
-              <p className="text-xs text-slate-400 max-w-sm mt-1">
-                Upload an invoice image or select a quick test scenario on the left to trigger Gemini's 1-pass extraction and rule engine.
+              <p className={`text-xs max-w-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Upload an invoice image on the left or select a quick test scenario below to trigger Gemini's 1-pass extraction and rule engine.
               </p>
             </div>
           )}
 
           {isProcessing && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center min-h-[380px] flex flex-col items-center justify-center">
+            <div
+              className={`border rounded-xl p-8 sm:p-10 text-center min-h-[350px] flex flex-col items-center justify-center transition-colors ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}
+            >
               <div className="w-12 h-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-4" />
-              <h3 className="text-sm font-bold text-white">
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Reading Invoice with Gemini Multimodal OCR
               </h3>
-              <p className="text-xs text-slate-400 max-w-md mt-1">
+              <p className={`text-xs max-w-md mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Extracting structured JSON fields, checking calculation reconciliation, evaluating approval ceiling rules, and generating plain-English log summary...
               </p>
             </div>
           )}
 
           {extractedResult && !isProcessing && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-lg overflow-hidden">
+            <div
+              className={`border rounded-xl shadow-lg overflow-hidden transition-colors ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            >
               {/* Result Header & Decision Banner */}
-              <div className="p-5 border-b border-slate-800 bg-slate-900/90">
+              <div
+                className={`p-4 sm:p-5 border-b ${
+                  isDark ? 'border-slate-800 bg-slate-900/90' : 'border-slate-200 bg-slate-50/80'
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-base font-bold text-white">
+                      <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {extractedResult.vendor_name || 'Unidentified Vendor'}
                       </h3>
                       <BadgeStatus status={extractedResult.decision.status} size="md" />
@@ -607,22 +602,25 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/60">
-                            {extractedResult.line_items?.map((item, idx) => (
-                              <tr key={idx} className="hover:bg-slate-800/30">
-                                <td className="p-2.5 font-medium text-slate-200">
-                                  {item.description || 'Item'}
-                                </td>
-                                <td className="p-2.5 text-right font-mono text-slate-400">
-                                  {item.quantity || 1}
-                                </td>
-                                <td className="p-2.5 text-right font-mono text-slate-400">
-                                  {(item.unit_price || 0).toLocaleString()}
-                                </td>
-                                <td className="p-2.5 text-right font-mono font-semibold text-slate-100">
-                                  {(item.amount || 0).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
+                            {extractedResult.line_items?.map((item, idx) => {
+                              const lineAmount = item.amount && item.amount > 0 ? item.amount : ((item.quantity || 1) * (item.unit_price || 0));
+                              return (
+                                <tr key={idx} className="hover:bg-slate-800/30">
+                                  <td className="p-2.5 font-medium text-slate-200">
+                                    {item.description || 'Item'}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono text-slate-400">
+                                    {item.quantity || 1}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono text-slate-400">
+                                    {(item.unit_price || 0).toLocaleString()}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono font-semibold text-slate-100">
+                                    {lineAmount.toLocaleString()}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                             {(!extractedResult.line_items ||
                               extractedResult.line_items.length === 0) && (
                               <tr>
@@ -738,6 +736,69 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
               </div>
             </div>
           )}
+
+          {/* Quick Scenario Picker (Hackathon Judge Friendly) */}
+          <div
+            className={`border rounded-xl p-4 sm:p-5 shadow-sm space-y-3 transition-colors ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 ${
+                  isDark ? 'text-slate-200' : 'text-slate-800'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <span>Quick Test Scenarios (1-Click)</span>
+              </h3>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                  isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                Judges
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {SAMPLE_SCENARIOS.map((scenario) => {
+                const isSelected = selectedFile?.name.includes(
+                  scenario.sampleData.invoice_number || 'sample'
+                );
+                return (
+                  <button
+                    key={scenario.id}
+                    onClick={() => handleSelectSampleScenario(scenario)}
+                    className={`w-full text-left p-2.5 rounded-lg border transition-all flex items-center justify-between ${
+                      isSelected
+                        ? isDark
+                          ? 'bg-indigo-950/60 border-indigo-500 text-white'
+                          : 'bg-indigo-50 border-indigo-500 text-slate-900'
+                        : isDark
+                        ? 'bg-slate-950/50 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'
+                        : 'bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="pr-2 min-w-0">
+                      <div className="text-xs font-semibold flex items-center space-x-1.5">
+                        <span className="truncate">{scenario.title}</span>
+                        <BadgeStatus status={scenario.badge} size="sm" />
+                      </div>
+                      <div
+                        className={`text-[11px] mt-0.5 truncate ${
+                          isDark ? 'text-slate-400' : 'text-slate-500'
+                        }`}
+                      >
+                        {scenario.subtitle}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

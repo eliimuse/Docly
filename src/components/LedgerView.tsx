@@ -24,6 +24,7 @@ interface LedgerViewProps {
   onDeleteRecord: (id: string) => void;
   onResetLedger: () => void;
   ruleConfig: WorkflowRuleConfig;
+  theme?: 'dark' | 'light';
 }
 
 export const LedgerView: React.FC<LedgerViewProps> = ({
@@ -33,7 +34,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   onDeleteRecord,
   onResetLedger,
   ruleConfig,
+  theme = 'dark',
 }) => {
+  const isDark = theme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
 
@@ -149,93 +152,123 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Metric Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div
+          className={`border rounded-xl p-4 shadow-sm transition-colors ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Total Volume</span>
-            <Database className="w-4 h-4 text-indigo-400" />
+            <Database className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-xl font-extrabold text-white">
+          <div className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {ruleConfig.currencySymbol}
             {metrics.totalVolume.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
-            Across <span className="font-semibold text-slate-200">{metrics.totalCount}</span> total
-            documents processed
+          <div className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Across{' '}
+            <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+              {metrics.totalCount}
+            </span>{' '}
+            total documents processed
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between text-emerald-400 mb-2">
+        <div
+          className={`border rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500 transition-colors ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-between text-emerald-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Approved</span>
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-emerald-400">
+          <div className="text-xl font-extrabold text-emerald-500">
             {ruleConfig.currencySymbol}
             {metrics.approvedSum.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
-            <span className="font-semibold text-emerald-300">{metrics.approvedCount}</span> invoices
-            auto-posted
+          <div className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className="font-semibold text-emerald-600">{metrics.approvedCount}</span> invoices auto-posted
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between text-amber-400 mb-2">
+        <div
+          className={`border rounded-xl p-4 shadow-sm border-l-4 border-l-amber-500 transition-colors ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Flagged Review</span>
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-amber-400">
+          <div className="text-xl font-extrabold text-amber-500">
             {ruleConfig.currencySymbol}
             {metrics.flaggedSum.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
-            <span className="font-semibold text-amber-300">{metrics.flaggedCount}</span> invoices
-            awaiting sign-off
+          <div className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className="font-semibold text-amber-600">{metrics.flaggedCount}</span> invoices awaiting sign-off
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm border-l-4 border-l-red-500">
-          <div className="flex items-center justify-between text-red-400 mb-2">
+        <div
+          className={`border rounded-xl p-4 shadow-sm border-l-4 border-l-red-500 transition-colors ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-between text-red-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Rejected</span>
             <XCircle className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-red-400">
+          <div className="text-xl font-extrabold text-red-500">
             {ruleConfig.currencySymbol}
             {metrics.rejectedSum.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
-            <span className="font-semibold text-red-300">{metrics.rejectedCount}</span> failed
-            compliance
+          <div className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className="font-semibold text-red-600">{metrics.rejectedCount}</span> failed compliance
           </div>
         </div>
       </div>
 
       {/* Filter & Action Controls Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div
+        className={`border rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 transition-colors ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+        }`}
+      >
         {/* Search */}
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search vendor, invoice # or text..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+            className={`w-full rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:border-indigo-500 border ${
+              isDark
+                ? 'bg-slate-950 border-slate-800 text-white placeholder-slate-500'
+                : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+            }`}
           />
         </div>
 
         {/* Status Filters & Actions */}
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end gap-y-2">
+          <div
+            className={`flex p-1 rounded-lg border text-xs overflow-x-auto ${
+              isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-300'
+            }`}
+          >
             {['ALL', 'APPROVED', 'FLAGGED', 'REJECTED'].map((filterKey) => (
               <button
                 key={filterKey}
                 onClick={() => setSelectedStatusFilter(filterKey)}
                 className={`px-2.5 py-1 rounded font-medium text-[11px] transition-colors ${
                   selectedStatusFilter === filterKey
-                    ? 'bg-indigo-600 text-white font-bold'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-indigo-600 text-white font-bold shadow'
+                    : isDark
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {filterKey}
@@ -246,16 +279,24 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           <div className="flex items-center space-x-1.5">
             <button
               onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-colors ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+              }`}
               title="Export CSV Log"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden md:inline">Export CSV</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Export CSV</span>
             </button>
 
             <button
               onClick={onResetLedger}
-              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg text-xs"
+              className={`px-2.5 py-1.5 border rounded-lg text-xs transition-colors ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-300'
+              }`}
               title="Reset Dataset to Default Demo Samples"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -264,11 +305,88 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         </div>
       </div>
 
-      {/* Audit Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+      {/* Audit Log Container (Mobile Card View + Desktop Table View) */}
+      <div
+        className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+        }`}
+      >
+        {/* Mobile View Card List (< md breakpoint) */}
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+          {filteredRecords.map((record) => {
+            const effectiveStatus =
+              record.overrideStatus || record.extractedData.decision.status;
+            return (
+              <div
+                key={record.id}
+                onClick={() => onSelectRecord(record)}
+                className={`p-3.5 space-y-2 cursor-pointer transition-colors ${
+                  isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {record.extractedData.vendor_name || 'Unidentified'}
+                    </span>
+                    <div className="text-[11px] font-mono text-slate-500">
+                      #{record.extractedData.invoice_number || 'N/A'} • {record.extractedData.invoice_date || 'N/A'}
+                    </div>
+                  </div>
+                  <BadgeStatus status={effectiveStatus} size="sm" />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="text-xs font-mono font-extrabold text-indigo-500">
+                    {record.extractedData.currency || ruleConfig.currencySymbol}{' '}
+                    {(record.extractedData.total_amount || 0).toLocaleString()}
+                  </div>
+                  <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => onSelectRecord(record)}
+                      className={`p-1.5 rounded border text-xs ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDeleteRecord(record.id)}
+                      className={`p-1.5 rounded border text-xs ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-red-400' : 'bg-slate-100 border-slate-300 text-red-600'
+                      }`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {record.extractedData.summary && (
+                  <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {record.extractedData.summary}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+
+          {filteredRecords.length === 0 && (
+            <div className={`p-6 text-center text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              No invoice records found matching query.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View (>= md breakpoint) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead
+              className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
+                isDark
+                  ? 'bg-slate-950/80 text-slate-400 border-slate-800'
+                  : 'bg-slate-50 text-slate-600 border-slate-200'
+              }`}
+            >
               <tr>
                 <th className="p-3.5">Vendor Name</th>
                 <th className="p-3.5">Invoice #</th>
@@ -279,32 +397,38 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody
+              className={`divide-y ${
+                isDark ? 'divide-slate-800/60 text-slate-300' : 'divide-slate-200 text-slate-700'
+              }`}
+            >
               {filteredRecords.map((record) => {
                 const effectiveStatus =
                   record.overrideStatus || record.extractedData.decision.status;
                 return (
                   <tr
                     key={record.id}
-                    className="hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                    className={`transition-colors cursor-pointer ${
+                      isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'
+                    }`}
                     onClick={() => onSelectRecord(record)}
                   >
-                    <td className="p-3.5 font-bold text-slate-100">
+                    <td className={`p-3.5 font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                       <div>{record.extractedData.vendor_name || 'Unidentified'}</div>
                       <div className="text-[10px] font-normal text-slate-500 font-mono mt-0.5">
                         {record.fileName}
                       </div>
                     </td>
 
-                    <td className="p-3.5 font-mono text-slate-300">
+                    <td className="p-3.5 font-mono">
                       {record.extractedData.invoice_number || 'N/A'}
                     </td>
 
-                    <td className="p-3.5 text-slate-400">
+                    <td className={`p-3.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       {record.extractedData.invoice_date || 'N/A'}
                     </td>
 
-                    <td className="p-3.5 text-right font-mono font-extrabold text-slate-100 text-sm">
+                    <td className={`p-3.5 text-right font-mono font-extrabold text-sm ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                       {record.extractedData.currency || ruleConfig.currencySymbol}{' '}
                       {(record.extractedData.total_amount || 0).toLocaleString()}
                     </td>
@@ -313,14 +437,14 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                       <div className="flex flex-col space-y-1">
                         <BadgeStatus status={effectiveStatus} size="sm" />
                         {record.overrideStatus && (
-                          <span className="text-[9px] text-indigo-400 font-semibold italic">
+                          <span className="text-[9px] text-indigo-500 font-semibold italic">
                             (Manager Override)
                           </span>
                         )}
                       </div>
                     </td>
 
-                    <td className="p-3.5 text-slate-400 max-w-xs truncate">
+                    <td className={`p-3.5 max-w-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {record.extractedData.summary}
                     </td>
 
@@ -330,7 +454,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
                     >
                       <button
                         onClick={() => onSelectRecord(record)}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded hover:text-white"
+                        className={`p-1.5 rounded transition-colors ${
+                          isDark
+                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900'
+                        }`}
                         title="View Full Detail Modal"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -338,7 +466,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
                       <button
                         onClick={() => onDeleteRecord(record.id)}
-                        className="p-1.5 bg-slate-800 hover:bg-red-950 text-slate-400 hover:text-red-400 rounded"
+                        className={`p-1.5 rounded transition-colors ${
+                          isDark
+                            ? 'bg-slate-800 hover:bg-red-950 text-slate-400 hover:text-red-400'
+                            : 'bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600'
+                        }`}
                         title="Delete Record"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -350,7 +482,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
               {filteredRecords.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                  <td colSpan={7} className={`p-8 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                     No invoice records found matching current query or filters.
                   </td>
                 </tr>

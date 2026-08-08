@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Database, ShieldCheck, Settings, Sparkles, Sliders } from 'lucide-react';
+import { FileText, Database, ShieldCheck, Sparkles, Sliders, Sun, Moon } from 'lucide-react';
 import { WorkflowRuleConfig } from '../types';
 
 interface HeaderProps {
@@ -8,6 +8,8 @@ interface HeaderProps {
   recordCount: number;
   ruleConfig: WorkflowRuleConfig;
   setRuleConfig: React.Dispatch<React.SetStateAction<WorkflowRuleConfig>>;
+  theme: 'dark' | 'light';
+  setTheme: (theme: 'dark' | 'light') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,78 +18,180 @@ export const Header: React.FC<HeaderProps> = ({
   recordCount,
   ruleConfig,
   setRuleConfig,
+  theme,
+  setTheme,
 }) => {
   const [showConfigModal, setShowConfigModal] = useState(false);
 
+  const isDark = theme === 'dark';
+
   return (
     <>
-      <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-30 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-inner shadow-indigo-400/30">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-                  Docly
-                </h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <Sparkles className="w-3 h-3 mr-1 text-emerald-400" /> Gemini 2-Pass OCR
-                </span>
+      <header
+        className={`sticky top-0 z-30 shadow-md transition-colors duration-200 border-b ${
+          isDark
+            ? 'bg-slate-900 border-slate-800 text-slate-100'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Brand Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+                <FileText className="w-5 h-5 text-white" />
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                Multimodal OCR • Validation Rules • Automated Ledger Entry
-              </p>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h1
+                    className={`text-xl font-black tracking-tight ${
+                      isDark
+                        ? 'bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent'
+                        : 'text-slate-900'
+                    }`}
+                  >
+                    Docly
+                  </h1>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                      isDark
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 mr-1 text-emerald-500" /> Gemini 2-Pass OCR
+                  </span>
+                </div>
+                <p
+                  className={`text-[11px] hidden sm:block ${
+                    isDark ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                >
+                  Multimodal OCR • Validation Rules • Automated Ledger Entry
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile Controls Right: Theme & Rules */}
+            <div className="flex md:hidden items-center space-x-1.5">
+              <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className={`p-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`}
+                title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <button
+                onClick={() => setShowConfigModal(true)}
+                className={`flex items-center space-x-1 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 text-slate-200 border-slate-700'
+                    : 'bg-slate-100 text-slate-800 border-slate-300'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{ruleConfig.currencySymbol}{ruleConfig.approvalThreshold.toLocaleString()}</span>
+              </button>
             </div>
           </div>
 
-          {/* Navigation & Rule Settings */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <nav className="flex space-x-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+          {/* Navigation & Controls Row */}
+          <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3 w-full md:w-auto">
+            <nav
+              className={`flex space-x-1 p-1 rounded-xl border w-full sm:w-auto ${
+                isDark
+                  ? 'bg-slate-950/70 border-slate-800'
+                  : 'bg-slate-100 border-slate-200'
+              }`}
+            >
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'upload'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : isDark
+                    ? 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>Document Ingestion</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ledger')}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'ledger'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : isDark
+                    ? 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
-                <Database className="w-4 h-4" />
+                <Database className="w-3.5 h-3.5" />
                 <span>Audit Ledger</span>
                 {recordCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-950 text-indigo-200 border border-indigo-700">
+                  <span
+                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      activeTab === 'ledger'
+                        ? 'bg-white/20 text-white'
+                        : isDark
+                        ? 'bg-indigo-950 text-indigo-300 border border-indigo-800'
+                        : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                    }`}
+                  >
                     {recordCount}
                   </span>
                 )}
               </button>
             </nav>
 
-            {/* Threshold Settings Trigger */}
-            <button
-              onClick={() => setShowConfigModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-xs font-medium transition-colors"
-              title="Workflow Decision Rules Configuration"
-            >
-              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden md:inline">Rules Limit:</span>
-              <span className="font-bold text-white">
-                {ruleConfig.currencySymbol}{ruleConfig.approvalThreshold.toLocaleString()}
-              </span>
-            </button>
+            {/* Desktop Controls */}
+            <div className="hidden md:flex items-center space-x-2">
+              <button
+                onClick={() => setShowConfigModal(true)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300'
+                }`}
+                title="Workflow Decision Rules Configuration"
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Rules Limit:</span>
+                <span className="font-bold">
+                  {ruleConfig.currencySymbol}{ruleConfig.approvalThreshold.toLocaleString()}
+                </span>
+              </button>
+
+              {/* Theme Switcher Button */}
+              <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className={`p-2 rounded-lg border text-xs font-medium flex items-center space-x-1.5 transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-amber-600 border-slate-300'
+                }`}
+                title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+              >
+                {isDark ? (
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <span className="text-slate-200">Light</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 text-indigo-600" />
+                    <span className="text-slate-700">Dark</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -95,15 +199,27 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Rules Config Modal */}
       {showConfigModal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 text-slate-100">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div
+            className={`border rounded-xl shadow-2xl max-w-md w-full p-6 transition-colors ${
+              isDark
+                ? 'bg-slate-900 border-slate-800 text-slate-100'
+                : 'bg-white border-slate-200 text-slate-900'
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between pb-4 border-b ${
+                isDark ? 'border-slate-800' : 'border-slate-200'
+              }`}
+            >
               <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base text-white">Workflow Decision Matrix Rules</h3>
+                <ShieldCheck className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-bold text-base">Workflow Decision Matrix Rules</h3>
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="text-slate-400 hover:text-white text-sm px-2 py-1"
+                className={`text-sm px-2 py-1 rounded ${
+                  isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
               >
                 ✕
               </button>
@@ -111,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Currency Symbol
                 </label>
                 <div className="flex space-x-2">
@@ -119,10 +235,12 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       key={symbol}
                       onClick={() => setRuleConfig((prev) => ({ ...prev, currencySymbol: symbol }))}
-                      className={`px-3 py-1.5 text-sm rounded border ${
+                      className={`px-3 py-1.5 text-sm rounded border font-medium ${
                         ruleConfig.currencySymbol === symbol
                           ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
-                          : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                          : isDark
+                          ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                          : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {symbol}
@@ -132,11 +250,11 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Auto-Approval Ceiling Threshold
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400 text-sm">
+                  <span className="absolute left-3 top-2 text-slate-400 text-sm font-semibold">
                     {ruleConfig.currencySymbol}
                   </span>
                   <input
@@ -148,16 +266,20 @@ export const Header: React.FC<HeaderProps> = ({
                         approvalThreshold: Number(e.target.value) || 0,
                       }))
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className={`w-full rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:border-indigo-500 border ${
+                      isDark
+                        ? 'bg-slate-950 border-slate-700 text-white'
+                        : 'bg-slate-50 border-slate-300 text-slate-900'
+                    }`}
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Invoices above this amount are automatically <span className="text-amber-400 font-medium">FLAGGED</span> for manager review, even if math is valid.
+                <p className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Invoices above this amount are automatically <span className="text-amber-500 font-medium">FLAGGED</span> for manager review, even if math is valid.
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-800 space-y-2">
-                <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+              <div className={`pt-2 border-t space-y-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <label className={`flex items-center justify-between text-xs cursor-pointer ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <span>Strict Math Reconciliation (Subtotal + Tax = Total)</span>
                   <input
                     type="checkbox"
@@ -165,11 +287,11 @@ export const Header: React.FC<HeaderProps> = ({
                     onChange={(e) =>
                       setRuleConfig((prev) => ({ ...prev, strictMathCheck: e.target.checked }))
                     }
-                    className="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded text-indigo-600 focus:ring-indigo-500"
                   />
                 </label>
 
-                <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+                <label className={`flex items-center justify-between text-xs cursor-pointer ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <span>Auto-commit approved invoices to Audit Ledger</span>
                   <input
                     type="checkbox"
@@ -177,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
                     onChange={(e) =>
                       setRuleConfig((prev) => ({ ...prev, autoSaveToLedger: e.target.checked }))
                     }
-                    className="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded text-indigo-600 focus:ring-indigo-500"
                   />
                 </label>
               </div>

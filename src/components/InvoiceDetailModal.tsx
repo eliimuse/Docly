@@ -23,14 +23,18 @@ interface InvoiceDetailModalProps {
   record: InvoiceRecord | null;
   onClose: () => void;
   onOverrideStatus: (id: string, newStatus: DecisionStatus, reason: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   record,
   onClose,
   onOverrideStatus,
+  theme = 'dark',
 }) => {
   if (!record) return null;
+
+  const isDark = theme === 'dark';
 
   const [overrideStatus, setOverrideStatus] = useState<DecisionStatus>(
     record.overrideStatus || record.extractedData.decision.status
@@ -57,22 +61,34 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden text-slate-100">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+      <div
+        className={`border rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden transition-colors ${
+          isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+        }`}
+      >
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+        <div
+          className={`p-4 sm:p-5 border-b flex items-center justify-between ${
+            isDark ? 'border-slate-800 bg-slate-900/90' : 'border-slate-200 bg-slate-50/90'
+          }`}
+        >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-700/50 flex items-center justify-center text-indigo-400">
+            <div
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center ${
+                isDark ? 'bg-indigo-950 border-indigo-700/50 text-indigo-400' : 'bg-indigo-50 border-indigo-200 text-indigo-600'
+              }`}
+            >
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="text-base font-bold text-white">
+                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {d.vendor_name || 'Unidentified Vendor'}
                 </h3>
                 <BadgeStatus status={effectiveStatus} size="sm" />
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Invoice #{d.invoice_number || 'N/A'} • ID: {record.id}
               </p>
             </div>
@@ -80,29 +96,41 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg"
+            className={`p-1.5 rounded-lg ${
+              isDark ? 'text-slate-400 hover:text-white bg-slate-800' : 'text-slate-500 hover:text-slate-900 bg-slate-100'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Accounting Summary Banner */}
-        <div className="px-5 py-3 bg-slate-950 border-b border-slate-800 text-xs text-indigo-200 flex items-start space-x-2">
-          <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+        <div
+          className={`px-4 sm:px-5 py-3 border-b text-xs flex items-start space-x-2 ${
+            isDark ? 'bg-slate-950 border-slate-800 text-indigo-200' : 'bg-indigo-50/80 border-slate-200 text-indigo-900'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold text-indigo-300 mr-1">Plain-English Log:</span>
+            <span className="font-bold text-indigo-600 dark:text-indigo-300 mr-1">Plain-English Log:</span>
             <span>{d.summary}</span>
           </div>
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-b border-slate-800 bg-slate-950 px-5">
+        <div
+          className={`flex border-b px-4 sm:px-5 ${
+            isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-100'
+          }`}
+        >
           <button
             onClick={() => setActiveTab('details')}
             className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'details'
-                ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-indigo-500 text-indigo-500 font-bold'
+                : isDark
+                ? 'border-transparent text-slate-400 hover:text-slate-200'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             Invoice Breakdown
@@ -111,8 +139,10 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             onClick={() => setActiveTab('override')}
             className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 ${
               activeTab === 'override'
-                ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-indigo-500 text-indigo-500 font-bold'
+                : isDark
+                ? 'border-transparent text-slate-400 hover:text-slate-200'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -122,8 +152,10 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             onClick={() => setActiveTab('json')}
             className={`py-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center space-x-1 ${
               activeTab === 'json'
-                ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-indigo-500 text-indigo-500 font-bold'
+                : isDark
+                ? 'border-transparent text-slate-400 hover:text-slate-200'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Code className="w-3.5 h-3.5" />
@@ -132,51 +164,99 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         </div>
 
         {/* Body Content */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1">
           {activeTab === 'details' && (
             <>
               {/* Field Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div
+                className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl border ${
+                  isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider block ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
                     Invoice Date
                   </span>
-                  <span className="text-xs font-semibold text-slate-200">
+                  <span
+                    className={`text-xs font-semibold ${
+                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
                     {d.invoice_date || 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider block ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
                     Subtotal
                   </span>
-                  <span className="text-xs font-semibold text-slate-200">
+                  <span
+                    className={`text-xs font-semibold ${
+                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
                     {d.currency || '₹'} {(d.subtotal || 0).toLocaleString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider block ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
                     Tax / GST
                   </span>
-                  <span className="text-xs font-semibold text-slate-200">
+                  <span
+                    className={`text-xs font-semibold ${
+                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    }`}
+                  >
                     {d.currency || '₹'} {(d.tax_gst || 0).toLocaleString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider block ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
                     Total Amount
                   </span>
-                  <span className="text-sm font-extrabold text-emerald-400">
+                  <span className="text-sm font-extrabold text-emerald-500">
                     {d.currency || '₹'} {(d.total_amount || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {/* Validation & Decision */}
-              <div className="space-y-2 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs">
-                <div className="font-bold text-slate-200">Decision Justification:</div>
-                <p className="text-slate-400">{d.decision.reason}</p>
+              <div
+                className={`space-y-2 p-3.5 rounded-xl border text-xs ${
+                  isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div
+                  className={`font-bold ${
+                    isDark ? 'text-slate-200' : 'text-slate-800'
+                  }`}
+                >
+                  Decision Justification:
+                </div>
+                <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+                  {d.decision.reason}
+                </p>
                 {record.overrideReason && (
-                  <div className="pt-2 border-t border-slate-800 text-indigo-300">
+                  <div
+                    className={`pt-2 border-t text-indigo-500 ${
+                      isDark ? 'border-slate-800' : 'border-slate-200'
+                    }`}
+                  >
                     <span className="font-bold">Manager Override Note: </span>
                     {record.overrideReason}
                   </div>
@@ -185,12 +265,26 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
               {/* Line Items */}
               <div>
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                <h4
+                  className={`text-xs font-bold uppercase tracking-wider mb-2 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
                   Extracted Line Items ({d.line_items?.length || 0})
                 </h4>
-                <div className="overflow-x-auto border border-slate-800 rounded-lg">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
+                <div
+                  className={`overflow-x-auto border rounded-lg ${
+                    isDark ? 'border-slate-800' : 'border-slate-200'
+                  }`}
+                >
+                  <table className="w-full text-left text-xs">
+                    <thead
+                      className={`border-b text-[11px] uppercase ${
+                        isDark
+                          ? 'bg-slate-950 text-slate-400 border-slate-800'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
                       <tr>
                         <th className="p-2.5">Description</th>
                         <th className="p-2.5 text-right">Qty</th>
@@ -198,23 +292,48 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                         <th className="p-2.5 text-right">Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {d.line_items?.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2.5 font-medium text-slate-200">
-                            {item.description}
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-400">
-                            {item.quantity}
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-400">
-                            {(item.unit_price || 0).toLocaleString()}
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-semibold text-slate-100">
-                            {(item.amount || 0).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
+                    <tbody
+                      className={`divide-y ${
+                        isDark
+                          ? 'divide-slate-800/60 text-slate-300'
+                          : 'divide-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {d.line_items?.map((item, idx) => {
+                        const lineAmount = item.amount && item.amount > 0 ? item.amount : ((item.quantity || 1) * (item.unit_price || 0));
+                        return (
+                          <tr key={idx}>
+                            <td
+                              className={`p-2.5 font-medium ${
+                                isDark ? 'text-slate-200' : 'text-slate-800'
+                              }`}
+                            >
+                              {item.description}
+                            </td>
+                            <td
+                              className={`p-2.5 text-right font-mono ${
+                                isDark ? 'text-slate-400' : 'text-slate-500'
+                              }`}
+                            >
+                              {item.quantity || 1}
+                            </td>
+                            <td
+                              className={`p-2.5 text-right font-mono ${
+                                isDark ? 'text-slate-400' : 'text-slate-500'
+                              }`}
+                            >
+                              {(item.unit_price || 0).toLocaleString()}
+                            </td>
+                            <td
+                              className={`p-2.5 text-right font-mono font-semibold ${
+                                isDark ? 'text-slate-100' : 'text-slate-900'
+                              }`}
+                            >
+                              {lineAmount.toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

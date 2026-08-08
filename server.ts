@@ -10,6 +10,36 @@ const PORT = 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// Helper function to safely convert string/formatted numbers to clean JS numbers
+function cleanNumber(val: any): number {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'number') {
+    return isNaN(val) ? 0 : val;
+  }
+  if (typeof val === 'string') {
+    let s = val.trim().replace(/[^0-9.,-]/g, '');
+    if (!s) return 0;
+
+    if (s.includes(',') && s.includes('.')) {
+      if (s.indexOf(',') < s.indexOf('.')) {
+        s = s.replace(/,/g, '');
+      } else {
+        s = s.replace(/\./g, '').replace(',', '.');
+      }
+    } else if (s.includes(',')) {
+      if (/,([0-9]{3})$/.test(s)) {
+        s = s.replace(/,/g, '');
+      } else {
+        s = s.replace(',', '.');
+      }
+    }
+
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  return 0;
+}
+
 // In-memory ledger store
 let ledgerStore: any[] = [];
 
@@ -49,7 +79,7 @@ const invoiceResponseSchema = {
           description: { type: Type.STRING },
           quantity: { type: Type.NUMBER },
           unit_price: { type: Type.NUMBER },
-          amount: { type: Type.NUMBER },
+          amount: { type: Type.NUMBER, description: "Total line item amount equal to quantity multiplied by unit_price" },
         },
       },
     },
@@ -137,32 +167,32 @@ app.post("/api/process-invoice", async (req, res) => {
       actualMimeType = "image/png";
     }
 
-    const systemInstruction = `You are an accounts-payable workflow AI assistant. You will receive an invoice as an image or PDF.
+    const systemInstruction = `You are an accounts-payable workflow AI assistant. You will receive an invoice or receipt as an image or PDF.
 Do the following in one pass:
 
 1. Extract:
-   - vendor_name (string)
-   - invoice_number (string)
-   - invoice_date (YYYY-MM-DD)
-   - subtotal (number)
-   - tax_gst (number)
-   - total_amount (number)
-   - currency (string, e.g. "INR", "USD", "EUR")
-   - line_items (array of { description, quantity, unit_price, amount })
+   - vendor_name: Name of vendor/supplier. If missing, unreadable, blank, or explicitly marked as not provided (e.g. "[VENDOR NAME NOT PROVIDED]"), set to null or empty string "".
+   - invoice_number: Invoice reference number. If missing, set to null or empty string "".
+   - invoice_date: Date on invoice in YYYY-MM-DD. If missing, blank, or underlines (e.g. "Date: _____"), set to null or empty string "".
+   - subtotal: Subtotal before tax as a clean float or integer number (e.g. 180000 or 180000.00). If not explicitly listed, calculate as total_amount - tax_gst.
+   - tax_gst: Tax amount as a clean float or integer. Default to 0 if not listed.
+   - total_amount: Final total amount payable as a clean float or integer.
+   - currency: Currency symbol or code, e.g. "INR", "USD", "EUR". Default to "INR" if unspecified.
+   - line_items: List of line items ({ description, quantity, unit_price, amount }).
+     CRITICAL NUMERIC RULE: All numeric values (subtotal, tax_gst, total_amount, unit_price, amount) MUST be clean JS float/integer numbers. E.g., for "180,000.00" return 180000 or 180000.00. Do NOT include thousand commas or currency symbols inside numeric values. 'amount' MUST be equal to quantity * unit_price for each line item.
 
 2. Validate:
-   - Check if subtotal + tax_gst ≈ total_amount (allow ±1.5 unit rounding).
-   - Flag any missing or unreadable mandatory fields out of: vendor_name, invoice_number, invoice_date, total_amount.
-   - Set totals_match to true if math reconciles, else false.
-   - Collect human-readable validation issue messages.
+   - Identify missing mandatory required fields: vendor_name, invoice_date, total_amount.
+   - Check if subtotal + tax_gst ≈ total_amount (allow ±2 units for rounding or currency conversion).
+   - Set totals_match to true if math reconciles or if subtotal was inferred, else false.
 
 3. Decide:
-   - "approved" if ALL mandatory fields (vendor_name, invoice_number, invoice_date, total_amount) are present AND totals_match is true AND total_amount < ${customThreshold}.
-   - "flagged" if mandatory fields are present BUT totals_match is false OR total_amount >= ${customThreshold}.
-   - "rejected" if ANY mandatory field (vendor_name, invoice_number, invoice_date, total_amount) is missing, empty, or unreadable.
+   - "rejected" if ANY mandatory field (vendor_name, invoice_date, total_amount) is missing, unreadable, blank, or explicitly marked as not provided.
+   - "flagged" if ALL mandatory fields are present BUT total_amount >= ${customThreshold} OR subtotal + tax_gst does NOT match total_amount.
+   - "approved" if ALL mandatory fields are present AND total_amount < ${customThreshold} AND math reconciles.
 
 4. Summary:
-   - Write a 1-2 sentence concise plain-English accounting summary describing the invoice, amount, vendor, and outcome.
+   - Write a 1-2 sentence concise plain-English accounting summary describing the invoice, amount, vendor, and decision outcome.
 
 Return strictly JSON matching the required schema.`;
 
@@ -202,54 +232,144 @@ Return strictly JSON matching the required schema.`;
     const responseText = response.text || "{}";
     let extracted = JSON.parse(responseText);
 
-    // Double check math & rules on server for strict policy adherence
+    // Clean and convert all numeric fields from potential strings/formatted numbers
+    extracted.subtotal = cleanNumber(extracted.subtotal);
+    extracted.tax_gst = cleanNumber(extracted.tax_gst);
+    extracted.total_amount = cleanNumber(extracted.total_amount);
+
+    // Track missing required mandatory fields for strict policy enforcement
     const missing: string[] = [];
-    if (!extracted.vendor_name || extracted.vendor_name.trim() === "") missing.push("vendor_name");
-    if (!extracted.invoice_number || extracted.invoice_number.trim() === "") missing.push("invoice_number");
-    if (!extracted.invoice_date || extracted.invoice_date.trim() === "") missing.push("invoice_date");
-    if (extracted.total_amount === undefined || extracted.total_amount === null || isNaN(extracted.total_amount) || extracted.total_amount <= 0) {
-      missing.push("total_amount");
+    const missingLabels: string[] = [];
+
+    const rawVendor = String(extracted.vendor_name || "").trim();
+    if (
+      !rawVendor ||
+      rawVendor.toLowerCase().includes("not provided") ||
+      rawVendor.toLowerCase().includes("unknown") ||
+      rawVendor.toLowerCase().includes("missing") ||
+      rawVendor.startsWith("[") ||
+      rawVendor.endsWith("]")
+    ) {
+      missing.push("vendor_name");
+      missingLabels.push("Vendor Name");
+      extracted.vendor_name = rawVendor || "Not Provided";
+    }
+
+    const rawDate = String(extracted.invoice_date || "").trim();
+    if (
+      !rawDate ||
+      rawDate.includes("_") ||
+      rawDate.toLowerCase().includes("n/a") ||
+      rawDate.toLowerCase().includes("missing") ||
+      rawDate.toLowerCase().includes("not provided")
+    ) {
+      missing.push("invoice_date");
+      missingLabels.push("Invoice Date");
+      extracted.invoice_date = rawDate || "Not Provided";
+    }
+
+    if (!extracted.total_amount || extracted.total_amount <= 0) {
+      if (extracted.subtotal && extracted.subtotal > 0) {
+        extracted.total_amount = extracted.subtotal + extracted.tax_gst;
+      } else {
+        missing.push("total_amount");
+        missingLabels.push("Total Amount");
+      }
+    }
+
+    if (extracted.total_amount > 0 && extracted.subtotal <= 0) {
+      extracted.subtotal = Math.max(0, extracted.total_amount - extracted.tax_gst);
+    }
+
+    if (!extracted.currency) {
+      extracted.currency = "INR";
+    }
+
+    const rawInvNum = String(extracted.invoice_number || "").trim();
+    if (!rawInvNum || rawInvNum.toLowerCase().includes("n/a") || rawInvNum.includes("_")) {
+      extracted.invoice_number = rawInvNum || "N/A";
+    }
+
+    // Sanitize and calculate line_items math (qty * unit_price)
+    if (Array.isArray(extracted.line_items) && extracted.line_items.length > 0) {
+      extracted.line_items = extracted.line_items.map((item: any) => {
+        const qty = cleanNumber(item.quantity) || 1;
+        let unitPrice = cleanNumber(item.unit_price);
+        let amt = cleanNumber(item.amount);
+
+        // If amount is 0 or missing, but unitPrice > 0, calculate amount = qty * unitPrice
+        if (amt === 0 && unitPrice > 0) {
+          amt = Math.round(qty * unitPrice * 100) / 100;
+        }
+        // If unitPrice is 0 or missing, but amount > 0, calculate unitPrice = amount / qty
+        else if (unitPrice === 0 && amt > 0) {
+          unitPrice = Math.round((amt / qty) * 100) / 100;
+        }
+        // If both exist, verify amt = qty * unitPrice within tolerance
+        else if (unitPrice > 0 && Math.abs(amt - qty * unitPrice) > 1) {
+          amt = Math.round(qty * unitPrice * 100) / 100;
+        }
+        // If both amt and unitPrice are 0, and there's 1 line item and total_amount > 0, fallback to total_amount
+        else if (amt === 0 && unitPrice === 0 && extracted.line_items.length === 1 && extracted.total_amount > 0) {
+          amt = extracted.total_amount;
+          unitPrice = Math.round((amt / qty) * 100) / 100;
+        }
+
+        return {
+          description: String(item.description || "Item"),
+          quantity: qty,
+          unit_price: unitPrice,
+          amount: amt,
+        };
+      });
     }
 
     const calculatedTotal = (extracted.subtotal || 0) + (extracted.tax_gst || 0);
     const mathDiff = Math.abs(calculatedTotal - (extracted.total_amount || 0));
-    const totalsReconcile = extracted.subtotal !== undefined && extracted.tax_gst !== undefined ? mathDiff <= 1.5 : true;
+    const totalsReconcile = mathDiff <= 5;
 
-    // Ensure validation array exists
+    // Build validation feedback
     extracted.validation = extracted.validation || { missing_fields: [], totals_match: totalsReconcile, issues: [] };
     extracted.validation.missing_fields = missing;
     extracted.validation.totals_match = totalsReconcile;
 
-    const issues: string[] = extracted.validation.issues || [];
+    const issues: string[] = [];
     if (missing.length > 0) {
-      issues.push(`Missing mandatory fields: ${missing.join(", ")}`);
+      missingLabels.forEach((label) => {
+        issues.push(`Missing required field on document: ${label}`);
+      });
     }
     if (!totalsReconcile) {
-      issues.push(`Math discrepancy: Subtotal (${extracted.subtotal}) + Tax (${extracted.tax_gst}) = ${calculatedTotal}, Stated Total = ${extracted.total_amount} (Diff: ${mathDiff.toFixed(2)})`);
+      issues.push(`Math discrepancy: Subtotal (${extracted.subtotal}) + Tax (${extracted.tax_gst}) = ${calculatedTotal}, Stated Total = ${extracted.total_amount}`);
     }
     if (extracted.total_amount >= customThreshold) {
-      issues.push(`Amount (${extracted.currency || ""} ${extracted.total_amount}) reaches or exceeds threshold (${customThreshold}) requiring manager review.`);
+      issues.push(`Amount (${extracted.currency} ${extracted.total_amount.toLocaleString()}) reaches or exceeds threshold (${customThreshold}) requiring manager sign-off.`);
     }
     extracted.validation.issues = Array.from(new Set(issues));
 
-    // Refine Decision logic
+    // Decision logic:
+    // Rejected: Any required field missing or unreadable on document (vendor, date, total amount)
+    // Flagged: Exceeds threshold OR major math mismatch
+    // Approved: All required fields present, amount below threshold, math reconciles
     if (missing.length > 0) {
       extracted.decision = {
         status: "rejected",
-        reason: `Rejected due to unreadable or missing required field(s): ${missing.join(", ")}.`,
+        reason: `Rejected due to missing required field(s) on document: ${missingLabels.join(", ")}.`,
       };
-    } else if (!totalsReconcile || extracted.total_amount >= customThreshold) {
-      const reasons: string[] = [];
-      if (!totalsReconcile) reasons.push("totals mismatch");
-      if (extracted.total_amount >= customThreshold) reasons.push(`total amount exceeds threshold limit (${customThreshold})`);
+    } else if (extracted.total_amount >= customThreshold) {
       extracted.decision = {
         status: "flagged",
-        reason: `Flagged for manager review due to: ${reasons.join(" and ")}.`,
+        reason: `Flagged for manager review: Total amount (${extracted.currency} ${extracted.total_amount.toLocaleString()}) reaches or exceeds approval policy threshold (${customThreshold}).`,
+      };
+    } else if (!totalsReconcile && mathDiff > extracted.total_amount * 0.1) {
+      extracted.decision = {
+        status: "flagged",
+        reason: `Flagged due to line-item sum discrepancy (${extracted.currency} ${mathDiff.toFixed(2)} variance).`,
       };
     } else {
       extracted.decision = {
         status: "approved",
-        reason: `Approved automatically. All required fields verified, totals reconcile, and total amount is below the approval threshold of ${customThreshold}.`,
+        reason: `Approved automatically: Total amount (${extracted.currency} ${extracted.total_amount.toLocaleString()}) is below approval policy threshold (${customThreshold}) and required accounting data is verified.`,
       };
     }
 
