@@ -1,12 +1,10 @@
-<div align="center">
 # 📄 Docly
  
 **A universal Document → Workflow AI agent.**
 Upload any document — an invoice, purchase order, resume, or student application — and Docly extracts the data, validates it, makes an approve/flag/reject decision, and logs it to a ledger. No manual steps in between.
  
-Built for the **PromptWars** hackathon · "Build a system that doesn't just assist humans in completing a task — make the system capable of completing the task automatically."
+> Built for the **PromptWars** hackathon · *"Build a system that doesn't just assist humans in completing a task — make the system capable of completing the task automatically."*
  
-</div>
 ---
  
 ## What it does
