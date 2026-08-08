@@ -259,6 +259,9 @@ export const UploadView: React.FC<UploadViewProps> = ({
 
             {/* Dropzone */}
             <div
+              tabIndex={0}
+              role="button"
+              aria-label="Upload document file dropzone. Press enter or space to choose a file."
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => {
@@ -266,7 +269,13 @@ export const UploadView: React.FC<UploadViewProps> = ({
                   fileInputRef.current?.click();
                 }
               }}
-              className={`border-2 border-dashed rounded-xl p-4 sm:p-5 text-center transition-all ${
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !selectedFile) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              className={`border-2 border-dashed rounded-xl p-4 sm:p-5 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 selectedFile
                   ? isDark
                     ? 'border-indigo-500/60 bg-indigo-950/20'

@@ -73,7 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex md:hidden items-center space-x-1.5">
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className={`p-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                aria-label={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+                className={`p-1.5 rounded-lg border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isDark
                     ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
@@ -85,7 +86,8 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={() => setShowConfigModal(true)}
-                className={`flex items-center space-x-1 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                aria-label="Configure Workflow Rules"
+                className={`flex items-center space-x-1 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isDark
                     ? 'bg-slate-800 text-slate-200 border-slate-700'
                     : 'bg-slate-100 text-slate-800 border-slate-300'
@@ -100,6 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Navigation & Controls Row */}
           <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3 w-full md:w-auto">
             <nav
+              aria-label="Primary Navigation"
               className={`flex space-x-1 p-1 rounded-xl border w-full sm:w-auto ${
                 isDark
                   ? 'bg-slate-950/70 border-slate-800'
@@ -108,7 +111,8 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                aria-label="Document Upload view"
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   activeTab === 'upload'
                     ? 'bg-indigo-600 text-white shadow'
                     : isDark
@@ -122,7 +126,8 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={() => setActiveTab('ledger')}
-                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                aria-label="Audit Ledger view"
+                className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   activeTab === 'ledger'
                     ? 'bg-indigo-600 text-white shadow'
                     : isDark
@@ -152,7 +157,8 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="hidden md:flex items-center space-x-2">
               <button
                 onClick={() => setShowConfigModal(true)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors ${
+                aria-label="Workflow Decision Rules Configuration"
+                className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isDark
                     ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300'
@@ -169,7 +175,8 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Theme Switcher Button */}
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className={`p-2 rounded-lg border text-xs font-medium flex items-center space-x-1.5 transition-colors ${
+                aria-label={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+                className={`p-2 rounded-lg border text-xs font-medium flex items-center space-x-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isDark
                     ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
                     : 'bg-slate-100 hover:bg-slate-200 text-amber-600 border-slate-300'
@@ -195,7 +202,12 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Rules Config Modal */}
       {showConfigModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rules-modal-title"
+        >
           <div
             className={`border rounded-xl shadow-2xl max-w-md w-full p-6 transition-colors ${
               isDark
@@ -210,11 +222,12 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-indigo-500" />
-                <h3 className="font-bold text-base">Invoice approval rules</h3>
+                <h3 id="rules-modal-title" className="font-bold text-base">Invoice approval rules</h3>
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}
-                className={`text-sm px-2 py-1 rounded ${
+                aria-label="Close rules configuration modal"
+                className={`text-sm px-2 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >

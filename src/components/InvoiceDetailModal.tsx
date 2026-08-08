@@ -49,6 +49,16 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   const d = record.extractedData;
   const effectiveStatus = record.overrideStatus || d.decision.status;
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleApplyOverride = () => {
     onOverrideStatus(record.id, overrideStatus, overrideReason);
     onClose();
@@ -61,7 +71,12 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+    <div
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="invoice-modal-title"
+    >
       <div
         className={`border rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden transition-colors ${
           isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
@@ -83,7 +98,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <h3 id="invoice-modal-title" className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {d.vendor_name || 'Unidentified Vendor'}
                 </h3>
                 <BadgeStatus status={effectiveStatus} size="sm" />
@@ -96,7 +111,8 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg ${
+            aria-label="Close invoice details modal"
+            className={`p-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               isDark ? 'text-slate-400 hover:text-white bg-slate-800' : 'text-slate-500 hover:text-slate-900 bg-slate-100'
             }`}
           >

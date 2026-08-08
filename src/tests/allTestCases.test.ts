@@ -10,6 +10,7 @@
  */
 
 import { InvoiceRecord, WorkflowRuleConfig, DecisionStatus } from '../types';
+import { decideStatus, cleanNumber } from '../lib/decisionEngine';
 
 export interface TestCase {
   id: string;
@@ -21,7 +22,10 @@ export interface TestCase {
     document_title: string;
     vendor_name: string;
     invoice_number: string;
+    invoice_date?: string;
     total_amount: number;
+    subtotal?: number;
+    tax_gst?: number;
     gpa?: number;
     experience_years?: number;
     math_check_valid?: boolean;
@@ -142,7 +146,10 @@ export const TEST_SUITE: TestCase[] = [
       document_title: 'Invoice - Apex Tech Solutions',
       vendor_name: 'Apex Tech Solutions Pvt Ltd',
       invoice_number: 'INV-2026-0891',
+      invoice_date: '2026-08-01',
       total_amount: 42500,
+      subtotal: 36016.95,
+      tax_gst: 6483.05,
       math_check_valid: true,
       issues: ['All mandatory fields verified.', 'Subtotal + GST match total amount.'],
     },
@@ -158,6 +165,7 @@ export const TEST_SUITE: TestCase[] = [
       document_title: 'PO #88204 - Global Freight',
       vendor_name: 'Global Freight & Logistics',
       invoice_number: 'PO-88204',
+      invoice_date: '2026-08-04',
       total_amount: 145000,
       math_check_valid: true,
       issues: ['Flagged: PO total amount (₹145,000) exceeds ₹100,000 spending threshold.'],
@@ -167,18 +175,36 @@ export const TEST_SUITE: TestCase[] = [
   {
     id: 'TC-INV-03',
     category: 'INVOICE',
-    title: 'Rejected Invoice - Mismatched Arithmetic / Invalid Tax ID',
-    description: 'Line item subtotal does not match invoice total and GST ID is invalid.',
+    title: 'Rejected Invoice - Missing Entity Name',
+    description: 'Document missing required vendor name on document.',
     input: {
       document_type: 'Invoice',
-      document_title: 'Invoice - Rogue Vendor',
-      vendor_name: 'Unverified Supplies Ltd',
+      document_title: 'Invoice - Unknown',
+      vendor_name: 'Not Provided',
       invoice_number: 'INV-2026-9999',
+      invoice_date: '2026-08-01',
       total_amount: 85000,
       math_check_valid: false,
-      issues: ['Rejected: Subtotal + Tax arithmetic failed. Invalid GSTIN format.'],
+      issues: ['Rejected: Subtotal + Tax arithmetic failed.'],
     },
     expectedStatus: 'rejected',
+  },
+  {
+    id: 'TC-EDGE-01',
+    category: 'INVOICE',
+    title: 'Edge Case - Arithmetic Discrepancy Outside Tolerance',
+    description: 'Line item sum discrepancy exceeds 10% threshold.',
+    input: {
+      document_type: 'Invoice',
+      document_title: 'Invoice - Bad Math',
+      vendor_name: 'Vendor X',
+      invoice_number: 'INV-101',
+      invoice_date: '2026-08-01',
+      subtotal: 1000,
+      tax_gst: 100,
+      total_amount: 1500, // 400 variance
+    },
+    expectedStatus: 'flagged',
   },
 ];
 
@@ -198,7 +224,7 @@ export function getDocumentCategory(docType: string, docTitle: string): 'RESUME'
 }
 
 /**
- * Decision Matrix Rule Evaluator
+ * Direct evaluation calling real decision engine
  */
 export function evaluateDecisionMatrix(
   input: TestCase['input'],
@@ -209,36 +235,8 @@ export function evaluateDecisionMatrix(
     autoSaveToLedger: true,
   }
 ): { status: DecisionStatus; reason: string } {
-  const category = getDocumentCategory(input.document_type, input.document_title);
-
-  if (category === 'RESUME') {
-    if ((input.experience_years ?? 0) < 1 || input.issues?.some((i) => i.toLowerCase().includes('rejected'))) {
-      return { status: 'rejected', reason: 'Experience below mandatory criteria or critical qualification missing.' };
-    }
-    if (input.issues?.some((i) => i.toLowerCase().includes('flagged'))) {
-      return { status: 'flagged', reason: 'Candidate profile flagged for HR background review.' };
-    }
-    return { status: 'approved', reason: 'Candidate shortlisted: Strong skills match and experience verified.' };
-  }
-
-  if (category === 'APPLICATION') {
-    if ((input.gpa ?? 0) === 0 || input.issues?.some((i) => i.toLowerCase().includes('rejected'))) {
-      return { status: 'rejected', reason: 'Missing mandatory transcript or academic eligibility failed.' };
-    }
-    if ((input.gpa ?? 0) < 3.2 || input.issues?.some((i) => i.toLowerCase().includes('flagged'))) {
-      return { status: 'flagged', reason: 'GPA below automatic cutoff; routed to Academic Committee.' };
-    }
-    return { status: 'approved', reason: 'Application approved: High academic standing verified.' };
-  }
-
-  // INVOICE / PO
-  if (input.math_check_valid === false || input.issues?.some((i) => i.toLowerCase().includes('rejected'))) {
-    return { status: 'rejected', reason: 'Arithmetic mismatch or tax ID validation failure.' };
-  }
-  if (input.total_amount > ruleConfig.approvalThreshold || input.issues?.some((i) => i.toLowerCase().includes('flagged'))) {
-    return { status: 'flagged', reason: `Amount (${input.total_amount}) exceeds policy threshold (${ruleConfig.approvalThreshold}).` };
-  }
-  return { status: 'approved', reason: 'Invoice verified: Arithmetic balances and amount within limit.' };
+  const result = decideStatus(input, { approvalThreshold: ruleConfig.approvalThreshold, currencySymbol: ruleConfig.currencySymbol });
+  return { status: result.status, reason: result.reason };
 }
 
 /**

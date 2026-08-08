@@ -83,6 +83,9 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
     <div
       className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col justify-between overflow-hidden text-slate-100 animate-fadeIn"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Document preview for ${fileName}`}
     >
       {/* Top Controls Bar */}
       <div
@@ -115,7 +118,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
               <button
                 onClick={handleZoomOut}
                 disabled={zoom <= 50}
-                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded disabled:opacity-40"
+                aria-label="Zoom Out"
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 title="Zoom Out (-25%)"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -126,14 +130,16 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
               <button
                 onClick={handleZoomIn}
                 disabled={zoom >= 300}
-                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded disabled:opacity-40"
+                aria-label="Zoom In"
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 title="Zoom In (+25%)"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={handleResetZoom}
-                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded"
+                aria-label="Reset Zoom and Rotation"
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 title="Reset Zoom & Rotation"
               >
                 <Maximize2 className="w-4 h-4" />
@@ -141,7 +147,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
               <div className="h-4 w-px bg-slate-700 mx-1" />
               <button
                 onClick={handleRotate}
-                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded"
+                aria-label="Rotate 90 degrees"
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 title="Rotate 90°"
               >
                 <RotateCw className="w-4 h-4" />
@@ -152,8 +159,9 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           <a
             href={srcUrl}
             download={fileName}
+            aria-label={`Download ${fileName}`}
             onClick={(e) => e.stopPropagation()}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-xs flex items-center space-x-1"
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-xs flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             title="Download Document File"
           >
             <Download className="w-4 h-4" />
@@ -163,7 +171,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           {!isPdf && (
             <button
               onClick={handlePrint}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-xs flex items-center space-x-1"
+              aria-label="Print Document"
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-xs flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               title="Print Document"
             >
               <Printer className="w-4 h-4" />
@@ -175,8 +184,9 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             href={srcUrl}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Open document in new window"
             onClick={(e) => e.stopPropagation()}
-            className="p-2 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 rounded-lg border border-indigo-700/60 text-xs flex items-center space-x-1"
+            className="p-2 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 rounded-lg border border-indigo-700/60 text-xs flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             title="Open in new window"
           >
             <ExternalLink className="w-4 h-4" />
@@ -184,7 +194,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 bg-slate-800 hover:bg-red-900/80 hover:text-white text-slate-300 rounded-lg border border-slate-700 ml-2"
+            aria-label="Close document lightbox modal"
+            className="p-2 bg-slate-800 hover:bg-red-900/80 hover:text-white text-slate-300 rounded-lg border border-slate-700 ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             title="Close Lightbox (ESC)"
           >
             <X className="w-5 h-5" />

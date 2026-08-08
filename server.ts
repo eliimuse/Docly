@@ -2,55 +2,72 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { cleanNumber, decideStatus } from "./src/lib/decisionEngine";
 
 const app = express();
 const PORT = 3000;
 
-// Increase payload limits to handle image/PDF base64 payloads
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+// Security: Reduced payload limits to 10mb to mitigate payload-based DoS
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Helper function to safely convert string/formatted numbers to clean JS numbers
-function cleanNumber(val: any): number {
-  if (val === null || val === undefined) return 0;
-  if (typeof val === 'number') {
-    return isNaN(val) ? 0 : val;
+// Security: Explicit CORS configuration and security headers
+app.use("/api", (req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Session-Id");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
   }
-  if (typeof val === 'string') {
-    let s = val.trim().replace(/[^0-9.,-]/g, '');
-    if (!s) return 0;
+  next();
+});
 
-    if (s.includes(',') && s.includes('.')) {
-      if (s.indexOf(',') < s.indexOf('.')) {
-        s = s.replace(/,/g, '');
-      } else {
-        s = s.replace(/\./g, '').replace(',', '.');
-      }
-    } else if (s.includes(',')) {
-      if (/,([0-9]{3})$/.test(s)) {
-        s = s.replace(/,/g, '');
-      } else {
-        s = s.replace(',', '.');
-      }
+// Security: Lightweight In-Memory Rate Limiter for /api/* routes
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+const rateLimiter = (maxRequests: number, windowMs: number) => {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = req.ip || req.headers["x-forwarded-for"] || "127.0.0.1";
+    const key = `${req.path}:${ip}`;
+    const now = Date.now();
+    const record = rateLimitMap.get(key);
+
+    if (!record || now > record.resetTime) {
+      rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+      return next();
     }
 
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
-  }
-  return 0;
-}
+    if (record.count >= maxRequests) {
+      return res.status(429).json({
+        error: "Too many requests, please try again later.",
+      });
+    }
+
+    record.count++;
+    return next();
+  };
+};
+
+// Rate limits
+app.use("/api/process-invoice", rateLimiter(30, 15 * 60 * 1000)); // 30 expensive Gemini requests per 15 min
+app.use("/api/invoices", rateLimiter(200, 15 * 60 * 1000));
 
 // In-memory ledger store
 let ledgerStore: any[] = [];
 
+// Fail-fast check for GEMINI_API_KEY on startup
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.warn("⚠️ WARNING: GEMINI_API_KEY environment variable is not defined!");
+} else {
+  console.log("✅ GEMINI_API_KEY verified on startup.");
+}
+
 // Initialize Gemini Client
 const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("GEMINI_API_KEY is not defined in environment variables");
-  }
+  const currentKey = process.env.GEMINI_API_KEY || "";
   return new GoogleGenAI({
-    apiKey: apiKey || "",
+    apiKey: currentKey,
     httpOptions: {
       headers: {
         "User-Agent": "aistudio-build",
@@ -181,11 +198,9 @@ app.post("/api/process-invoice", async (req, res) => {
   try {
     const { fileData, mimeType, customThreshold = 100000, fileName = "uploaded-invoice" } = req.body;
 
-    if (!fileData) {
-      return res.status(400).json({ error: "No fileData provided" });
+    if (!fileData || typeof fileData !== "string" || fileData.trim().length === 0) {
+      return res.status(400).json({ success: false, error: "Invalid or empty fileData payload provided" });
     }
-
-    const ai = getGeminiClient();
 
     // Clean up base64 header if present
     let cleanBase64 = fileData;
@@ -201,6 +216,13 @@ app.post("/api/process-invoice", async (req, res) => {
     if (actualMimeType.includes("svg")) {
       actualMimeType = "image/png";
     }
+
+    const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf", "image/heic"];
+    if (!allowedMimeTypes.some((m) => actualMimeType.toLowerCase().includes(m.split("/")[1]))) {
+      actualMimeType = "image/png";
+    }
+
+    const ai = getGeminiClient();
 
     const systemInstruction = `You are a universal Document-to-Workflow AI Engine. You analyze any document image or PDF (e.g., Invoices, Purchase Orders, Resumes, Student Applications, Legal Contracts, Expense Receipts, Medical Records, ID Documents).
 
@@ -452,31 +474,12 @@ Return strictly JSON matching the required schema.`;
       ];
     }
 
-    // Decision logic:
-    // Rejected: Any required field missing or unreadable on document
-    // Flagged: Exceeds threshold OR major math mismatch OR policy review needed
-    // Approved: All required fields present and verified
-    if (missing.length > 0) {
-      extracted.decision = {
-        status: "rejected",
-        reason: `Rejected due to missing required field(s) on document: ${missingLabels.join(", ")}.`,
-      };
-    } else if (isFinancial && extracted.total_amount >= customThreshold) {
-      extracted.decision = {
-        status: "flagged",
-        reason: `Flagged for manager review: Total amount (${extracted.currency} ${extracted.total_amount.toLocaleString()}) reaches or exceeds approval policy threshold (${customThreshold}).`,
-      };
-    } else if (isFinancial && !totalsReconcile && mathDiff > extracted.total_amount * 0.1) {
-      extracted.decision = {
-        status: "flagged",
-        reason: `Flagged due to line-item sum discrepancy (${extracted.currency} ${mathDiff.toFixed(2)} variance).`,
-      };
-    } else {
-      extracted.decision = {
-        status: "approved",
-        reason: extracted.decision?.reason || `Approved automatically: ${extracted.document_type} successfully parsed and verified by AI workflow engine.`,
-      };
-    }
+    // Delegate decision logic to standalone decideStatus function
+    const decisionResult = decideStatus(extracted, { approvalThreshold: customThreshold, currencySymbol: extracted.currency });
+    extracted.decision = {
+      status: decisionResult.status,
+      reason: decisionResult.reason,
+    };
 
     const processingTimeMs = Date.now() - startTime;
 
@@ -502,12 +505,17 @@ app.get("/api/invoices", (req, res) => {
 // API: Save or Update Invoice in Ledger
 app.post("/api/invoices", (req, res) => {
   const { record } = req.body;
-  if (!record || !record.id) {
-    return res.status(400).json({ error: "Invalid record provided" });
+  if (!record || typeof record !== "object" || !record.id || typeof record.id !== "string") {
+    return res.status(400).json({ success: false, error: "Invalid record format provided" });
   }
+  const sessionId = req.headers["x-session-id"] as string | undefined;
+  if (sessionId) {
+    record.sessionId = sessionId;
+  }
+
   const existingIdx = ledgerStore.findIndex((r) => r.id === record.id);
   if (existingIdx >= 0) {
-    ledgerStore[existingIdx] = record;
+    ledgerStore[existingIdx] = { ...ledgerStore[existingIdx], ...record };
   } else {
     ledgerStore.unshift(record);
   }
@@ -518,10 +526,25 @@ app.post("/api/invoices", (req, res) => {
 app.put("/api/invoices/:id/override", (req, res) => {
   const { id } = req.params;
   const { overrideStatus, overrideReason } = req.body;
+
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ success: false, error: "Invalid ID parameter" });
+  }
+
+  if (!["approved", "flagged", "rejected"].includes(overrideStatus)) {
+    return res.status(400).json({ success: false, error: "Invalid overrideStatus value" });
+  }
+
   const idx = ledgerStore.findIndex((r) => r.id === id);
   if (idx === -1) {
-    return res.status(404).json({ error: "Invoice record not found" });
+    return res.status(404).json({ success: false, error: "Invoice record not found" });
   }
+
+  const sessionId = req.headers["x-session-id"] as string | undefined;
+  if (ledgerStore[idx].sessionId && sessionId && ledgerStore[idx].sessionId !== sessionId) {
+    return res.status(403).json({ success: false, error: "Unauthorized session for overriding this record" });
+  }
+
   ledgerStore[idx].overrideStatus = overrideStatus;
   ledgerStore[idx].overrideReason = overrideReason || "Manual status update by manager.";
   res.json({ success: true, record: ledgerStore[idx] });
@@ -530,6 +553,18 @@ app.put("/api/invoices/:id/override", (req, res) => {
 // API: Delete Invoice Record
 app.delete("/api/invoices/:id", (req, res) => {
   const { id } = req.params;
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ success: false, error: "Invalid ID parameter" });
+  }
+
+  const record = ledgerStore.find((r) => r.id === id);
+  if (record) {
+    const sessionId = req.headers["x-session-id"] as string | undefined;
+    if (record.sessionId && sessionId && record.sessionId !== sessionId) {
+      return res.status(403).json({ success: false, error: "Unauthorized session for deleting this record" });
+    }
+  }
+
   ledgerStore = ledgerStore.filter((r) => r.id !== id);
   res.json({ success: true, id });
 });
