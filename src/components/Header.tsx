@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
                     isDark ? 'text-slate-400' : 'text-slate-500'
                   }`}
                 >
-                  Universal Document AI • Dynamic Workflows • Central Ledger
+                  Universal Document AI • Dynamic Workflows
                 </p>
               </div>
             </div>
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Document Ingestion</span>
+                <span>Doc Upload</span>
               </button>
 
               <button
@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <Database className="w-3.5 h-3.5" />
-                <span>Audit Ledger</span>
+                <span>Ledger</span>
                 {recordCount > 0 && (
                   <span
                     className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-indigo-500" />
-                <h3 className="font-bold text-base">Workflow Decision Matrix Rules</h3>
+                <h3 className="font-bold text-base">Invoice approval rules</h3>
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}

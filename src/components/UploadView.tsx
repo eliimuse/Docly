@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload,
   FileText,
@@ -16,6 +17,11 @@ import {
   Eye,
   FolderOpen,
   Maximize2,
+  Layers,
+  Brain,
+  Bot,
+  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import {
   InvoiceExtractedData,
@@ -57,6 +63,25 @@ export const UploadView: React.FC<UploadViewProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedStatus, setSavedStatus] = useState<boolean>(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
+  const [selectedScenarioCategory, setSelectedScenarioCategory] = useState<'ALL' | 'RESUME' | 'APPLICATION' | 'INVOICE'>('ALL');
+
+  const filteredScenarios = useMemo(() => {
+    if (selectedScenarioCategory === 'ALL') return SAMPLE_SCENARIOS;
+    return SAMPLE_SCENARIOS.filter((s) => {
+      const docType = (s.sampleData.document_type || '').toLowerCase();
+      const docTitle = (s.sampleData.document_title || '').toLowerCase();
+      if (selectedScenarioCategory === 'RESUME') {
+        return docType.includes('resume') || docType.includes('candidate') || docTitle.includes('resume');
+      }
+      if (selectedScenarioCategory === 'APPLICATION') {
+        return docType.includes('student') || docType.includes('application') || docTitle.includes('application');
+      }
+      if (selectedScenarioCategory === 'INVOICE') {
+        return docType.includes('invoice') || docType.includes('order') || docType.includes('po') || docTitle.includes('invoice') || docTitle.includes('po');
+      }
+      return true;
+    });
+  }, [selectedScenarioCategory]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -229,7 +254,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
               </span>
             </h2>
             <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Drop any document (Resume, PO, Contract, Invoice) or select a scenario below to run the AI engine.
+              Drop any document (Resume, PO, Invoice, Student Application) or select a scenario below to run the AI engine.
             </p>
 
             {/* Dropzone */}
@@ -329,7 +354,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
                     <Upload className="w-5 h-5" />
                   </div>
                   <div className="text-xs font-semibold text-slate-200">
-                    Drag and drop invoice file here
+                    drag & drop file here
                   </div>
                   <div className="text-[11px] text-slate-400">or click to browse filesystem</div>
                 </div>
@@ -839,7 +864,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
               isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3
                 className={`text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 ${
                   isDark ? 'text-slate-200' : 'text-slate-800'
@@ -848,17 +873,30 @@ export const UploadView: React.FC<UploadViewProps> = ({
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
                 <span>Quick Test Scenarios (1-Click)</span>
               </h3>
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                  isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Judges
-              </span>
+              
+              {/* Single Filter Dropdown */}
+              <div className="relative flex items-center">
+                <Filter className="w-3 h-3 text-slate-400 absolute left-2.5 pointer-events-none" />
+                <select
+                  value={selectedScenarioCategory}
+                  onChange={(e) => setSelectedScenarioCategory(e.target.value as any)}
+                  className={`pl-7 pr-7 py-1 rounded-lg text-[11px] font-semibold border appearance-none cursor-pointer focus:outline-none focus:border-indigo-500 transition-colors ${
+                    isDark
+                      ? 'bg-slate-950 border-slate-800 text-slate-200'
+                      : 'bg-slate-50 border-slate-300 text-slate-800'
+                  }`}
+                >
+                  <option value="ALL">All Scenarios</option>
+                  <option value="RESUME">Resumes</option>
+                  <option value="APPLICATION">Applications</option>
+                  <option value="INVOICE">Invoices</option>
+                </select>
+                <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {SAMPLE_SCENARIOS.map((scenario) => {
+              {filteredScenarios.map((scenario) => {
                 const isSelected = selectedFile?.name.includes(
                   scenario.sampleData.invoice_number || 'sample'
                 );
@@ -953,25 +991,501 @@ export const BadgeStatus: React.FC<{ status: DecisionStatus; size?: 'sm' | 'md' 
   );
 };
 
-// Helper: Generates crisp PNG invoice document images using HTML5 Canvas for sample scenarios
+// Helper: Generates crisp PNG document images using HTML5 Canvas tailored to document type
 function createSampleDocumentDataUri(scenario: SampleScenario): string {
   const d = scenario.sampleData;
+  const docType = (d.document_type || '').toLowerCase();
+  const scenarioId = scenario.id;
+
   const canvas = document.createElement('canvas');
   canvas.width = 650;
-  canvas.height = 800;
+  canvas.height = 850;
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
   // Background - clean white document sheet
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, 650, 800);
+  ctx.fillRect(0, 0, 650, 850);
 
   // Outer document border
   ctx.strokeStyle = '#cbd5e1';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(15, 15, 620, 770);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(15, 15, 620, 820);
 
-  // Header Banner
+  // 1. RESUME / CANDIDATE PROFILE DOCUMENT
+  if (scenarioId === 'sample-resume' || docType.includes('resume') || docType.includes('candidate')) {
+    // Header Banner
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(20, 20, 610, 75);
+
+    // Candidate Name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px Arial, sans-serif';
+    ctx.fillText('ALEX RIVERA', 40, 52);
+
+    // Subtitle / Seniority
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '13px Arial, sans-serif';
+    ctx.fillText('Senior Full-Stack Architect & Lead Software Engineer', 40, 72);
+
+    // Contact details right aligned
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('alex.rivera@devmail.io', 440, 42);
+    ctx.fillText('+1 (555) 234-5678', 440, 58);
+    ctx.fillText('San Francisco, CA • Remote', 440, 74);
+
+    let y = 112;
+
+    // === ADDITIONAL HIGHLIGHTED SECTION: JOB APPLIED FOR ===
+    ctx.fillStyle = '#eff6ff'; // Soft indigo background tint
+    ctx.fillRect(35, y, 580, 72);
+    ctx.strokeStyle = '#6366f1'; // Indigo border
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(35, y, 580, 72);
+
+    // Solid accent stripe on left edge
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillRect(35, y, 6, 72);
+
+    ctx.fillStyle = '#312e81';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('TARGET POSITION APPLIED FOR', 52, y + 22);
+
+    ctx.fillStyle = '#1e1b4b';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('Applied Job Title:', 52, y + 44);
+    ctx.fillStyle = '#4338ca';
+    ctx.fillText('Lead Full-Stack Architect (Req #ARCH-2026-904)', 180, y + 44);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Department: Core Engineering  |  Applied: Aug 1, 2026  |  AI Match Score: 94%', 52, y + 61);
+
+    y += 92;
+
+    // Professional Summary
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('PROFESSIONAL SUMMARY', 35, y);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(35, y + 5);
+    ctx.lineTo(615, y + 5);
+    ctx.stroke();
+
+    y += 20;
+    ctx.fillStyle = '#334155';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Seasoned Full-Stack Architect with 8.5+ years of experience designing scalable microservices,', 35, y);
+    y += 16;
+    ctx.fillText('high-throughput React applications, and automated AI data pipelines. Proven leadership across', 35, y);
+    y += 16;
+    ctx.fillText('distributed engineering teams with expertise in React, Node.js, TypeScript, and Docker.', 35, y);
+
+    y += 32;
+
+    // Work Experience
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('WORK EXPERIENCE', 35, y);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.moveTo(35, y + 5);
+    ctx.lineTo(615, y + 5);
+    ctx.stroke();
+
+    y += 22;
+    // Position 1
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('Senior Tech Lead & Full-Stack Architect', 35, y);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('TechCorp Inc.  |  2022 – Present', 420, y);
+
+    y += 16;
+    ctx.fillStyle = '#334155';
+    ctx.fillText('• Architected cloud-native API gateway & React micro-frontends handling 10M+ daily transactions.', 45, y);
+    y += 15;
+    ctx.fillText('• Led an engineering team of 12 full-stack developers; optimized pipeline throughput by 42%.', 45, y);
+    y += 15;
+    ctx.fillText('• Spearheaded adoption of TypeScript, GraphQL, Docker, and continuous integration workflows.', 45, y);
+
+    y += 24;
+    // Position 2
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('Full-Stack Software Engineer', 35, y);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('CloudScale Labs  |  2018 – 2022', 420, y);
+
+    y += 16;
+    ctx.fillStyle = '#334155';
+    ctx.fillText('• Developed real-time enterprise analytics dashboard using React, Node.js, and PostgreSQL.', 45, y);
+    y += 15;
+    ctx.fillText('• Implemented OAuth2 / JWT authentication security frameworks and RESTful web microservices.', 45, y);
+
+    y += 32;
+
+    // Education & Certifications
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('EDUCATION & CERTIFICATIONS', 35, y);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.moveTo(35, y + 5);
+    ctx.lineTo(615, y + 5);
+    ctx.stroke();
+
+    y += 22;
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('B.S. in Computer Science', 35, y);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('University of California, Berkeley  |  GPA: 3.85 / 4.0', 210, y);
+
+    y += 18;
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('AWS Certified Solutions Architect', 35, y);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Amazon Web Services (Professional)', 260, y);
+
+    y += 32;
+
+    // Skills Matrix
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('CORE COMPETENCIES & TECHNICAL SKILLS', 35, y);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.moveTo(35, y + 5);
+    ctx.lineTo(615, y + 5);
+    ctx.stroke();
+
+    y += 22;
+    const skills = ['React / Next.js', 'Node.js / Express', 'TypeScript', 'Python', 'PostgreSQL', 'Docker / K8s', 'AWS Cloud', 'GraphQL'];
+    let xSkill = 35;
+    skills.forEach((skill) => {
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(xSkill, y - 14, 132, 22);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(xSkill, y - 14, 132, 22);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 11px Arial, sans-serif';
+      ctx.fillText(skill, xSkill + 8, y);
+
+      xSkill += 144;
+      if (xSkill > 500) {
+        xSkill = 35;
+        y += 28;
+      }
+    });
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Arial, sans-serif';
+    ctx.fillText('Alex Rivera • Resume / Applicant Document • Verified Candidate Profile', 35, 830);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // 2. STUDENT APPLICATION DOCUMENT
+  if (scenarioId === 'sample-student' || docType.includes('student') || docType.includes('academic')) {
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(20, 20, 610, 75);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText('STATE UNIVERSITY ADMISSIONS OFFICE', 40, 52);
+    ctx.font = '13px Arial, sans-serif';
+    ctx.fillText('OFFICIAL GRADUATE DEGREE APPLICATION FORM', 40, 72);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText('APPLICANT DETAILS', 40, 120);
+
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 128);
+    ctx.lineTo(610, 128);
+    ctx.stroke();
+
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Applicant Name:', 40, 150);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('Maya Patel', 160, 150);
+
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Application ID:', 380, 150);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('APP-2026-319', 480, 150);
+
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Target Program:', 40, 175);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('M.S. Data Science & Artificial Intelligence', 160, 175);
+
+    // Academic Qualifications Box
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(40, 205, 570, 100);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.strokeRect(40, 205, 570, 100);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('ACADEMIC QUALIFICATIONS & TEST SCORES', 55, 230);
+
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText('Undergraduate GPA: 3.88 / 4.0 (B.S. Mathematics & CS)', 55, 255);
+    ctx.fillText('GRE General Test Score: 328 (Quantitative: 168, Verbal: 160)', 55, 275);
+    ctx.fillText('Transcripts & Identity Verification: Verified & Cleared', 55, 295);
+
+    // Required Documents Table
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('SUBMITTED APPLICATION DOCUMENTS', 40, 340);
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(40, 355, 570, 28);
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('DOCUMENT TYPE', 55, 374);
+    ctx.fillText('STATUS', 420, 374);
+    ctx.fillText('VERIFICATION', 510, 374);
+
+    const docList = [
+      'Official Academic Transcript (B.S. Math & CS)',
+      'Statement of Purpose - AI Research',
+      '3x Recommendation Letters (Academic & Professional)',
+      'GRE Official Score Report'
+    ];
+
+    let yDoc = 405;
+    docList.forEach((doc, idx) => {
+      ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+      ctx.fillRect(40, yDoc - 16, 570, 26);
+      ctx.fillStyle = '#1e293b';
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(doc, 55, yDoc);
+      ctx.fillStyle = '#15803d';
+      ctx.font = 'bold 11px Arial, sans-serif';
+      ctx.fillText('ATTACHED', 420, yDoc);
+      ctx.fillText('PASSED', 510, yDoc);
+      yDoc += 28;
+    });
+
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(40, 560, 570, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('ADMISSIONS COMMITTEE DECISION: APPROVED FOR ADMISSION', 55, 590);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('University Graduate Admissions Board • Official Academic Application Record', 40, 810);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // 3. LEGAL CONTRACT DOCUMENT
+  if (scenarioId === 'sample-contract' || docType.includes('contract') || docType.includes('legal')) {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(20, 20, 610, 70);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText('MASTER SERVICE AGREEMENT (MSA)', 40, 50);
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('CONFIDENTIAL LEGAL AGREEMENT • CONTRACT #MSA-2026-042', 40, 70);
+
+    let yC = 120;
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('1. CONTRACTING PARTIES', 40, yC);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.moveTo(40, yC + 5);
+    ctx.lineTo(610, yC + 5);
+    ctx.stroke();
+
+    yC += 22;
+    ctx.fillStyle = '#475569';
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillText('This Master Service Agreement is entered into between CyberShield Systems ("Provider")', 40, yC);
+    yC += 16;
+    ctx.fillText('and Enterprise Corp ("Client"), effective as of July 15, 2026.', 40, yC);
+
+    yC += 32;
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('2. KEY TERMS & COMPLIANCE CLAUSES', 40, yC);
+    ctx.beginPath();
+    ctx.moveTo(40, yC + 5);
+    ctx.lineTo(610, yC + 5);
+    ctx.stroke();
+
+    yC += 25;
+    const clauses = [
+      { label: 'Agreement Term:', val: '24 Months (Auto-renewal with 60-day notice)' },
+      { label: 'Liability Limitation Cap:', val: '$1,000,000 USD Aggregate' },
+      { label: 'Governing Jurisdiction:', val: 'State of Delaware, United States' },
+      { label: 'Security Compliance:', val: 'SOC2 Type II & GDPR Addendum Certified' },
+    ];
+
+    clauses.forEach((cl) => {
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 12px Arial, sans-serif';
+      ctx.fillText(cl.label, 50, yC);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(cl.val, 210, yC);
+      yC += 22;
+    });
+
+    yC += 20;
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('3. SCOPE OF SERVICES', 40, yC);
+    ctx.beginPath();
+    ctx.moveTo(40, yC + 5);
+    ctx.lineTo(610, yC + 5);
+    ctx.stroke();
+
+    yC += 20;
+    ctx.fillStyle = '#334155';
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillText('• SOC2 Type II Security Compliance Audit & Continuous Monitoring', 50, yC);
+    yC += 18;
+    ctx.fillText('• 24/7 Managed Incident Detection, Prevention & Threat Response', 50, yC);
+    yC += 18;
+    ctx.fillText('• Enterprise Data Privacy & Regulatory Compliance Governance', 50, yC);
+
+    yC += 50;
+    // Signature block
+    ctx.strokeStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.moveTo(50, yC);
+    ctx.lineTo(260, yC);
+    ctx.moveTo(350, yC);
+    ctx.lineTo(560, yC);
+    ctx.stroke();
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Authorized Signature - CyberShield', 50, yC + 16);
+    ctx.fillText('Authorized Signature - Enterprise Corp', 350, yC + 16);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Legal Document Repository • Encrypted Digital Agreement Vault', 40, 810);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // 4. PURCHASE ORDER DOCUMENT
+  if (scenarioId === 'sample-po' || docType.includes('purchase order')) {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(20, 20, 610, 75);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.fillText(d.vendor_name || 'GLOBAL LOGISTICS', 40, 52);
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('OFFICIAL ENTERPRISE PURCHASE ORDER', 40, 72);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.fillText(`PO #${d.invoice_number || '88204'}`, 430, 52);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '12px Arial, sans-serif';
+    ctx.fillText(`DATE: ${d.invoice_date || '2026-08-04'}`, 430, 72);
+
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 110);
+    ctx.lineTo(610, 110);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 11px Arial, sans-serif';
+    ctx.fillText('SUPPLIER:', 40, 130);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '13px Arial, sans-serif';
+    ctx.fillText('Global Freight & Logistics Hub', 40, 147);
+
+    // Items table
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(40, 170, 570, 30);
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.fillText('ORDERED ITEM DESCRIPTION', 55, 190);
+    ctx.fillText('QTY', 370, 190);
+    ctx.fillText('UNIT PRICE', 440, 190);
+    ctx.fillText('AMOUNT', 530, 190);
+
+    const curr = d.currency || '₹';
+    let yP = 225;
+    (d.line_items || []).forEach((item, idx) => {
+      ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+      ctx.fillRect(40, yP - 18, 570, 28);
+
+      const qty = item.quantity || 1;
+      const amt = item.amount && item.amount > 0 ? item.amount : (qty * (item.unit_price || 0));
+      const unitPrice = item.unit_price && item.unit_price > 0 ? item.unit_price : (amt > 0 ? (amt / qty) : 0);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(item.description, 55, yP);
+      ctx.fillText(String(qty), 375, yP);
+      ctx.fillText(`${curr} ${unitPrice.toLocaleString()}`, 440, yP);
+      ctx.fillText(`${curr} ${amt.toLocaleString()}`, 530, yP);
+      yP += 32;
+    });
+
+    // Summary Totals Box
+    const sumY = Math.max(yP + 40, 480);
+    ctx.fillStyle = '#fffbeb';
+    ctx.fillRect(350, sumY, 260, 80);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(350, sumY, 260, 80);
+
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText('PO TOTAL AMOUNT:', 365, sumY + 45);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 16px Arial, sans-serif';
+    ctx.fillText(`${curr} ${(d.total_amount || 145000).toLocaleString()}`, 365, sumY + 68);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText('Purchase Order requisition approved for warehouse inventory dispatch.', 40, 810);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // 5. STANDARD ACCOUNTS PAYABLE INVOICE (DEFAULT FALLBACK)
   ctx.fillStyle = '#0f172a';
   ctx.font = 'bold 22px Arial, sans-serif';
   ctx.fillText(d.vendor_name || 'INVOICE DOCUMENT', 40, 55);
@@ -982,13 +1496,12 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
 
   ctx.fillStyle = '#1e40af';
   ctx.font = 'bold 18px Arial, sans-serif';
-  ctx.fillText(`INVOICE #${d.invoice_number || 'NO INVOICE NUMBER'}`, 400, 55);
+  ctx.fillText(`INVOICE #${d.invoice_number || 'INV-2026-0891'}`, 400, 55);
 
   ctx.fillStyle = '#475569';
   ctx.font = '13px Arial, sans-serif';
-  ctx.fillText(`DATE: ${d.invoice_date || 'MISSING / UNDATED'}`, 400, 75);
+  ctx.fillText(`DATE: ${d.invoice_date || '2026-08-01'}`, 400, 75);
 
-  // Divider line
   ctx.strokeStyle = '#e2e8f0';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -996,7 +1509,6 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
   ctx.lineTo(610, 95);
   ctx.stroke();
 
-  // Billed To Section
   ctx.fillStyle = '#64748b';
   ctx.font = 'bold 11px Arial, sans-serif';
   ctx.fillText('BILLED TO:', 40, 115);
@@ -1004,7 +1516,6 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
   ctx.font = '13px Arial, sans-serif';
   ctx.fillText('Acme Enterprise Corp - Accounts Payable Dept', 40, 132);
 
-  // Table Header
   ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(40, 155, 570, 30);
   ctx.fillStyle = '#334155';
@@ -1014,7 +1525,6 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
   ctx.fillText('UNIT PRICE', 440, 175);
   ctx.fillText('AMOUNT', 530, 175);
 
-  // Table Rows
   const curr = d.currency || '₹';
   let y = 210;
   (d.line_items || []).forEach((item, idx) => {
@@ -1034,14 +1544,12 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
     y += 32;
   });
 
-  // Table bottom border
   ctx.strokeStyle = '#cbd5e1';
   ctx.beginPath();
   ctx.moveTo(40, y + 10);
   ctx.lineTo(610, y + 10);
   ctx.stroke();
 
-  // Summary Totals
   const summaryY = Math.max(y + 40, 500);
 
   ctx.fillStyle = '#475569';
@@ -1055,7 +1563,6 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
   ctx.fillStyle = '#0f172a';
   ctx.fillText(`${curr} ${(d.tax_gst || 0).toLocaleString()}`, 500, summaryY + 25);
 
-  // Total Box
   ctx.fillStyle = '#eff6ff';
   ctx.fillRect(350, summaryY + 45, 260, 45);
   ctx.strokeStyle = '#3b82f6';
@@ -1069,10 +1576,9 @@ function createSampleDocumentDataUri(scenario: SampleScenario): string {
   ctx.font = 'bold 16px Arial, sans-serif';
   ctx.fillText(`${curr} ${(d.total_amount || 0).toLocaleString()}`, 500, summaryY + 72);
 
-  // Footer / Notes
   ctx.fillStyle = '#94a3b8';
   ctx.font = '11px Arial, sans-serif';
-  ctx.fillText('Thank you for your business! Payment due within 30 days of invoice date.', 40, 750);
+  ctx.fillText('Thank you for your business! Payment due within 30 days of invoice date.', 40, 810);
 
   return canvas.toDataURL('image/png');
 }

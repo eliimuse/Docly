@@ -338,7 +338,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onGetStarted, theme })
             isDark ? 'text-slate-300' : 'text-slate-600'
           }`}
         >
-          Upload Resumes, Purchase Orders, Contracts, Student Applications, or Invoices. Docly automatically classifies the document, extracts key data, generates dynamic workflow steps, and executes instant decisions.
+          Upload Resumes, Purchase Orders, Student Applications, or Invoices. Docly automatically classifies the document, extracts key data, generates dynamic workflow steps, and executes instant decisions.
         </motion.p>
 
         {/* GET STARTED ACTION BUTTON WITH GLOW & HOVER ANIMATION */}
@@ -396,7 +396,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onGetStarted, theme })
               Universal Document Classifier
             </h3>
             <p className={`mt-1 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Automatically identifies Resumes, POs, Contracts, Student Applications, and Invoices with zero manual configuration.
+              Automatically identifies Resumes, POs, Student Applications, and Invoices with zero manual configuration.
             </p>
           </motion.div>
 

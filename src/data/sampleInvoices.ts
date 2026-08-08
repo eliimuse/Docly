@@ -11,12 +11,12 @@ export const SAMPLE_SCENARIOS: SampleScenario[] = [
   {
     id: 'sample-resume',
     title: 'Senior Software Engineer Resume',
-    subtitle: 'Alex Rivera • 94% Role Match Score',
+    subtitle: 'Alex Rivera • Applied: Lead Full-Stack Architect',
     badge: 'approved',
-    description: 'Candidate profile with extracted technical skills, experience matrix, and AI shortlist recommendation.',
+    description: 'Candidate profile with target job applied section, extracted technical skills, work history matrix, and AI shortlist recommendation.',
     sampleData: {
       document_type: 'Resume / Candidate Profile',
-      document_title: 'Resume - Alex Rivera (Lead Full-Stack Architect)',
+      document_title: 'Resume - Alex Rivera (Applied for Lead Full-Stack Architect)',
       vendor_name: 'Alex Rivera',
       invoice_number: 'CAND-2026-904',
       invoice_date: '2026-08-01',
@@ -25,35 +25,39 @@ export const SAMPLE_SCENARIOS: SampleScenario[] = [
       total_amount: 0,
       currency: 'USD',
       key_attributes: [
-        { label: 'Role Title', value: 'Lead Full-Stack Architect' },
-        { label: 'Experience', value: '8.5 Years' },
-        { label: 'Match Score', value: '94% (Top Tier)' },
-        { label: 'Top Competencies', value: 'React, Node.js, TypeScript, Cloud Architecture' },
+        { label: 'Candidate Name', value: 'Alex Rivera' },
+        { label: 'Job Applied For', value: 'Lead Full-Stack Architect (Req #ARCH-2026)' },
+        { label: 'Total Experience', value: '8.5 Years' },
+        { label: 'Role Match Score', value: '94% (Top Tier Candidate Fit)' },
+        { label: 'Top Competencies', value: 'React, Node.js, TypeScript, Microservices' },
+        { label: 'Education', value: 'B.S. Computer Science (UC Berkeley)' },
       ],
       line_items: [
-        { description: 'Senior Frontend Lead - TechCorp Inc (4 yrs)', quantity: 1, unit_price: 0, amount: 0 },
+        { description: 'Target Position Applied: Lead Full-Stack Architect (Req #ARCH-2026)', quantity: 1, unit_price: 0, amount: 0 },
+        { description: 'Senior Tech Lead & Architect - TechCorp Inc (4 yrs)', quantity: 1, unit_price: 0, amount: 0 },
         { description: 'Full-Stack Developer - CloudScale Labs (3.5 yrs)', quantity: 1, unit_price: 0, amount: 0 },
-        { description: 'B.S. Computer Science - UC Berkeley', quantity: 1, unit_price: 0, amount: 0 },
+        { description: 'B.S. Computer Science - UC Berkeley (GPA 3.85)', quantity: 1, unit_price: 0, amount: 0 },
+        { description: 'AWS Certified Solutions Architect - Professional', quantity: 1, unit_price: 0, amount: 0 },
       ],
       dynamic_workflow: [
-        { step_name: 'Extract candidate details', status: 'completed', details: 'Parsed Alex Rivera, contact & LinkedIn verified' },
-        { step_name: 'Identify core technical skills', status: 'completed', details: 'React, Node, TypeScript, Docker, PostgreSQL' },
-        { step_name: 'Compare against job requirements', status: 'completed', details: 'Matches 9 of 10 required seniority competencies' },
-        { step_name: 'Calculate role match score', status: 'completed', details: 'Score: 94% (High Fit)' },
-        { step_name: 'Update recruitment database', status: 'completed', details: 'Candidate record indexed in ATS database' },
-        { step_name: 'Generate candidate summary', status: 'completed', details: 'Shortlist recommendation sent to hiring manager' },
+        { step_name: 'Extract candidate details & job applied for', status: 'completed', details: 'Parsed Alex Rivera • Target Role: Lead Full-Stack Architect' },
+        { step_name: 'Identify core technical skills & experience', status: 'completed', details: 'React, Node, TypeScript, Docker, PostgreSQL (8.5 yrs exp)' },
+        { step_name: 'Compare against job requirements matrix', status: 'completed', details: 'Matches 9 of 10 required seniority competencies' },
+        { step_name: 'Calculate role match score', status: 'completed', details: 'Score: 94% (High Fit for Architect role)' },
+        { step_name: 'Update recruitment & ATS database', status: 'completed', details: 'Candidate record indexed under Req #ARCH-2026' },
+        { step_name: 'Generate candidate shortlist summary', status: 'completed', details: 'Shortlist recommendation dispatched to Hiring Manager' },
       ],
       extraction_confidence: 'high',
       validation: {
         missing_fields: [],
         totals_match: true,
-        issues: ['Candidate meets all senior experience and degree requirements.']
+        issues: ['Candidate meets all senior architecture experience, degree, and certification requirements for the applied position.']
       },
       decision: {
         status: 'approved',
-        reason: 'Candidate shortlisted: Alex Rivera matches 94% of Senior Engineer requirements with 8.5 years of experience.'
+        reason: 'Candidate Shortlisted: Alex Rivera applied for Lead Full-Stack Architect and achieved a 94% role match score with 8.5 years of relevant experience.'
       },
-      summary: 'Candidate profile for Alex Rivera analyzed. Identified 8.5 years tech experience in React/Node stack with a 94% match score. Shortlist decision recorded.'
+      summary: 'Resume for Alex Rivera analyzed for the Lead Full-Stack Architect role. Candidate scored 94% match fit with 8.5 years of React/Node architecture experience.'
     }
   },
   {
@@ -194,53 +198,6 @@ export const SAMPLE_SCENARIOS: SampleScenario[] = [
         reason: 'All required fields present, line items reconcile with tax, and total amount (₹42,500) is below the ₹100,000 approval threshold.'
       },
       summary: 'Invoice INV-2026-0891 from Apex Tech Solutions Pvt Ltd for ₹42,500 (Cloud & DevOps services) was automatically approved and posted to AP ledger.'
-    }
-  },
-  {
-    id: 'sample-contract',
-    title: 'Vendor Master Service Agreement',
-    subtitle: 'CyberShield Systems • Contract NDA',
-    badge: 'approved',
-    description: 'Legal agreement document with extracted terms, liability caps, and jurisdiction clauses.',
-    sampleData: {
-      document_type: 'Legal Contract',
-      document_title: 'Master Service Agreement - CyberShield Systems',
-      vendor_name: 'CyberShield Systems',
-      invoice_number: 'MSA-2026-042',
-      invoice_date: '2026-07-15',
-      subtotal: 0,
-      tax_gst: 0,
-      total_amount: 0,
-      currency: 'USD',
-      key_attributes: [
-        { label: 'Contract Type', value: 'Master Service Agreement (MSA)' },
-        { label: 'Term Length', value: '24 Months (Auto-renewal)' },
-        { label: 'Liability Cap', value: '$1,000,000 USD' },
-        { label: 'Governing Law', value: 'Delaware, USA' },
-      ],
-      line_items: [
-        { description: 'SOC2 Type II Security Compliance Audit', quantity: 1, unit_price: 0, amount: 0 },
-        { description: '24/7 Managed Incident Detection & Response', quantity: 1, unit_price: 0, amount: 0 },
-        { description: 'Data Privacy & GDPR Addendum (DPA)', quantity: 1, unit_price: 0, amount: 0 },
-      ],
-      dynamic_workflow: [
-        { step_name: 'Extract contracting parties', status: 'completed', details: 'CyberShield Systems & Enterprise Corp' },
-        { step_name: 'Identify key legal clauses', status: 'completed', details: 'Indemnification, Liability Cap & Governing Law parsed' },
-        { step_name: 'Check compliance prerequisites', status: 'completed', details: 'SOC2 compliance certified' },
-        { step_name: 'Update legal records vault', status: 'completed', details: 'Contract indexed in Legal ERP' },
-        { step_name: 'Schedule term renewal alert', status: 'completed', details: 'Expiry notification set for July 2028' },
-      ],
-      extraction_confidence: 'high',
-      validation: {
-        missing_fields: [],
-        totals_match: true,
-        issues: ['All legal clauses and signing authority signatures present.']
-      },
-      decision: {
-        status: 'approved',
-        reason: 'Contract approved: MSA-2026-042 complies with enterprise legal standards and indemnification limits.'
-      },
-      summary: 'Master Service Agreement MSA-2026-042 with CyberShield Systems processed. Legal clauses, 24-month term, and liability limits indexed.'
     }
   }
 ];

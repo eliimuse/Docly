@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Sparkles,
   ShieldCheck,
+  ChevronDown,
 } from 'lucide-react';
 import { InvoiceRecord, DecisionStatus, WorkflowRuleConfig } from '../types';
 import { BadgeStatus } from './UploadView';
@@ -38,7 +39,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 }) => {
   const isDark = theme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [activeFilter, setActiveFilter] = useState<string>('ALL');
 
   // Calculate Metrics
   const metrics = useMemo(() => {
@@ -82,21 +83,47 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   // Filtered List
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      const status = r.overrideStatus || r.extractedData.decision.status;
-      const matchesStatus =
-        selectedStatusFilter === 'ALL' || status.toUpperCase() === selectedStatusFilter;
+      const status = (r.overrideStatus || r.extractedData.decision.status).toUpperCase();
+      const docTypeStr = (r.extractedData.document_type || '').toLowerCase();
+      const docTitleStr = (r.extractedData.document_title || '').toLowerCase();
+
+      let matchesFilter = true;
+
+      if (activeFilter === 'APPROVED' || activeFilter === 'FLAGGED' || activeFilter === 'REJECTED') {
+        matchesFilter = status === activeFilter;
+      } else if (activeFilter === 'RESUME') {
+        matchesFilter =
+          docTypeStr.includes('resume') ||
+          docTypeStr.includes('candidate') ||
+          docTitleStr.includes('resume');
+      } else if (activeFilter === 'APPLICATION') {
+        matchesFilter =
+          docTypeStr.includes('student') ||
+          docTypeStr.includes('application') ||
+          docTitleStr.includes('application');
+      } else if (activeFilter === 'INVOICE') {
+        matchesFilter =
+          docTypeStr.includes('invoice') ||
+          docTypeStr.includes('order') ||
+          docTypeStr.includes('po') ||
+          docTitleStr.includes('invoice') ||
+          docTitleStr.includes('po') ||
+          (!docTypeStr.includes('resume') &&
+            !docTypeStr.includes('student') &&
+            !docTypeStr.includes('application'));
+      }
 
       const vendor = (r.extractedData.vendor_name || '').toLowerCase();
       const invNum = (r.extractedData.invoice_number || '').toLowerCase();
       const summary = (r.extractedData.summary || '').toLowerCase();
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
-        vendor.includes(query) || invNum.includes(query) || summary.includes(query);
+        !query || vendor.includes(query) || invNum.includes(query) || summary.includes(query);
 
-      return matchesStatus && matchesSearch;
+      return matchesFilter && matchesSearch;
     });
-  }, [records, searchQuery, selectedStatusFilter]);
+  }, [records, searchQuery, activeFilter]);
 
   // Export CSV Handler
   const handleExportCSV = () => {
@@ -252,28 +279,33 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           />
         </div>
 
-        {/* Status Filters & Actions */}
-        <div className="flex flex-wrap items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end gap-y-2">
-          <div
-            className={`flex p-1 rounded-lg border text-xs overflow-x-auto ${
-              isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-300'
-            }`}
-          >
-            {['ALL', 'APPROVED', 'FLAGGED', 'REJECTED'].map((filterKey) => (
-              <button
-                key={filterKey}
-                onClick={() => setSelectedStatusFilter(filterKey)}
-                className={`px-2.5 py-1 rounded font-medium text-[11px] transition-colors ${
-                  selectedStatusFilter === filterKey
-                    ? 'bg-indigo-600 text-white font-bold shadow'
-                    : isDark
-                    ? 'text-slate-400 hover:text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {filterKey}
-              </button>
-            ))}
+        {/* Filter Option & Actions */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          {/* Single Filter Dropdown */}
+          <div className="relative flex items-center">
+            <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+            <select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+              className={`pl-8 pr-8 py-2 rounded-lg text-xs font-semibold border appearance-none cursor-pointer focus:outline-none focus:border-indigo-500 transition-colors ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-200 hover:border-slate-700'
+                  : 'bg-slate-50 border-slate-300 text-slate-800 hover:border-slate-400'
+              }`}
+            >
+              <option value="ALL">All Records</option>
+              <optgroup label="Document Category">
+                <option value="RESUME">Resumes</option>
+                <option value="APPLICATION">Applications</option>
+                <option value="INVOICE">Invoices</option>
+              </optgroup>
+              <optgroup label="Decision Status">
+                <option value="APPROVED">Approved</option>
+                <option value="FLAGGED">Flagged</option>
+                <option value="REJECTED">Rejected</option>
+              </optgroup>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
           </div>
 
           <div className="flex items-center space-x-1.5">
