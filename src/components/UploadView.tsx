@@ -13,6 +13,9 @@ import {
   Check,
   Zap,
   RotateCcw,
+  Eye,
+  FolderOpen,
+  Maximize2,
 } from 'lucide-react';
 import {
   InvoiceExtractedData,
@@ -23,6 +26,7 @@ import {
 } from '../types';
 import { SAMPLE_SCENARIOS } from '../data/sampleInvoices';
 import { WorkflowDiagram } from './WorkflowDiagram';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 interface UploadViewProps {
   onSaveToLedger: (record: InvoiceRecord) => void;
@@ -48,6 +52,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
   const [copiedJson, setCopiedJson] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedStatus, setSavedStatus] = useState<boolean>(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -215,11 +220,15 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+              onClick={() => {
+                if (!selectedFile) {
+                  fileInputRef.current?.click();
+                }
+              }}
+              className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${
                 selectedFile
                   ? 'border-indigo-500/60 bg-indigo-950/20'
-                  : 'border-slate-700 hover:border-indigo-500 hover:bg-slate-800/40'
+                  : 'border-slate-700 hover:border-indigo-500 hover:bg-slate-800/40 cursor-pointer'
               }`}
             >
               <input
@@ -231,27 +240,71 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
               />
 
               {selectedFile ? (
-                <div className="space-y-2">
-                  {selectedFile.previewUrl ? (
-                    <div className="max-h-36 overflow-hidden rounded border border-slate-700 bg-slate-950 flex justify-center p-2">
+                <div className="space-y-3">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsPreviewModalOpen(true);
+                    }}
+                    className="relative group max-h-48 overflow-hidden rounded-lg border border-slate-700 bg-slate-950 flex justify-center items-center p-2 cursor-pointer hover:border-indigo-500 shadow-md transition-all"
+                    title="Click to view fullscreen interactive preview"
+                  >
+                    {selectedFile.previewUrl ? (
                       <img
                         src={selectedFile.previewUrl}
                         alt="Invoice preview"
-                        className="max-h-32 object-contain"
+                        className="max-h-40 object-contain rounded"
                       />
+                    ) : (
+                      <div className="py-6 flex flex-col items-center">
+                        <FileText className="w-12 h-12 text-indigo-400 mb-1" />
+                        <span className="text-xs text-slate-300">Document Uploaded</span>
+                      </div>
+                    )}
+
+                    {/* Hover overlay hint */}
+                    <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-semibold text-xs space-y-1">
+                      <Maximize2 className="w-5 h-5 text-indigo-400" />
+                      <span>Click to Inspect Preview</span>
                     </div>
-                  ) : (
-                    <FileText className="w-10 h-10 text-indigo-400 mx-auto" />
-                  )}
+                  </div>
+
                   <div className="text-xs font-semibold text-white truncate max-w-xs mx-auto">
                     {selectedFile.name}
                   </div>
+
+                  <div className="flex items-center justify-center space-x-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsPreviewModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors shadow-sm"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-indigo-300" />
+                      <span>Preview Image</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      <span>Change File</span>
+                    </button>
+                  </div>
+
                   <p className="text-[11px] text-emerald-400 font-medium">
                     ✓ Ready for Gemini AI Extraction
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 py-3">
                   <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-indigo-400">
                     <Upload className="w-5 h-5" />
                   </div>
@@ -403,6 +456,17 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
                   </div>
 
                   <div className="flex items-center space-x-2">
+                    {selectedFile && (
+                      <button
+                        onClick={() => setIsPreviewModalOpen(true)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+                        title="Inspect original document image"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>View Document</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={handleManualSave}
                       disabled={savedStatus}
@@ -676,6 +740,18 @@ export const UploadView: React.FC<UploadViewProps> = ({ onSaveToLedger, ruleConf
           )}
         </div>
       </div>
+
+      {/* Lightbox Document Modal */}
+      {selectedFile && (
+        <DocumentPreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          fileName={selectedFile.name}
+          fileType={selectedFile.type}
+          previewUrl={selectedFile.previewUrl}
+          dataUri={selectedFile.dataUri}
+        />
+      )}
     </div>
   );
 };

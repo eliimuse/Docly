@@ -30,8 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-lg font-bold tracking-tight text-white">
-                  Invoice Workflow Agent
+                <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+                  Docly
                 </h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <Sparkles className="w-3 h-3 mr-1 text-emerald-400" /> Gemini 2-Pass OCR
